@@ -1,7 +1,6 @@
 import { Message, SendableChannels } from 'discord.js'
 import { ChatResponse, Ollama } from 'ollama'
 import { ChatParams, UserMessage, streamResponse, blockResponse } from './index.js'
-import { Queue } from '../queues/queue.js'
 import { AbortableAsyncIterator } from 'ollama/src/utils.js'
 
 /**
@@ -14,7 +13,7 @@ export async function normalMessage(
     message: Message,
     ollama: Ollama,
     model: string,
-    msgHist: Queue<UserMessage>,
+    msgHist: UserMessage[],
     stream: boolean
 ): Promise<string> {
     // bot's respnse
@@ -27,7 +26,7 @@ export async function normalMessage(
             const params: ChatParams = {
                 model: model,
                 ollama: ollama,
-                msgHist: msgHist.getItems()
+                msgHist: msgHist
             }
 
             // run query based on stream preference, true = stream, false = block

@@ -14,10 +14,10 @@ export const ClearUserChannelHistory: SlashCommand = {
         if (!channel || !UserCommand.includes(channel.type)) return
 
         // clear channel info for user
-        const successfulWipe = await clearChannelInfo(
-            interaction.channelId,
-            interaction.channel as TextChannel,
-            interaction.user.username
+            const successfulWipe = await clearChannelInfo(
+                `${interaction.channelId}-channel-context.json`,
+                interaction.channel as TextChannel,
+                interaction.user.id
         )
 
         // check result of clearing history

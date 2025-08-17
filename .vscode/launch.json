@@ -1,16 +1,19 @@
 {
-    "configurations": [
-        {
-            "name": "Debug (tsx)",
-            "type": "node",
-            "request": "launch",
-            "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
-            "program": "${workspaceFolder}/src/index.ts",
-            "cwd": "${workspaceFolder}",
-            "sourceMaps": true,
-            "env": {
-                "NODE_OPTIONS": "--enable-source-maps"
-            },
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug (tsx)",
+      "type": "pwa-node",
+      "request": "launch",
+      // Use local tsx binary
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+      // Pass the script to tsx explicitly
+      "args": ["src/index.ts"],
+      "cwd": "${workspaceFolder}",
+      "sourceMaps": true,
+      "console": "integratedTerminal",
+      // Enable node source map support explicitly (also safe to keep NODE_OPTIONS)
+      "runtimeArgs": ["--enable-source-maps"]
+    }
+  ]
 }

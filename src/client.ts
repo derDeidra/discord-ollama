@@ -20,14 +20,8 @@ export const ollama = new Ollama({
     host: `http://${Keys.ipAddress}:${Keys.portAddress}`,
 })
 
-// Create Queue managed by Events
-const messageHistory: Queue<UserMessage> = new Queue<UserMessage>
-
-// Create Channel History Queue managed by Events
-const channelMessageHistory: Queue<UserMessage> = new Queue<UserMessage>
-
 // register all events
-registerEvents(client, Events, messageHistory, channelMessageHistory, ollama, Keys.defaultModel)
+registerEvents(client, Events, ollama, Keys.defaultModel)
 
 // Try to log in the client
 await client.login(Keys.clientToken)
@@ -35,11 +29,3 @@ await client.login(Keys.clientToken)
         console.error('[Login Error]', error)
         process.exit(1)
     })
-
-// queue up bots name
-messageHistory.enqueue({
-    role: 'assistant',
-    content: `My name is ${client.user?.username}`,
-    images: [],
-    userId: client.user?.id ?? ''
-})

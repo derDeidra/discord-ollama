@@ -9,16 +9,9 @@ import path from 'path'
  * @param channel parent thread of the requested thread (can be GuildText)
  * @returns true if channel does not exist, false otherwise
  */
-async function checkChannelInfoExists(channel: TextChannel, user: string) {
-    const doesExists: boolean = await new Promise((resolve) => {
-        getChannelInfo(`${channel.id}-${user}.json`, (channelInfo) => {
-            if (channelInfo?.messages)
-                resolve(true)
-            else
-                resolve(false)
-        })
-    })
-    return doesExists
+async function checkChannelInfoExists(channel: TextChannel) {
+    const fullFileName = `data/${channel.id}-channel-context.json`
+    return fs.existsSync(fullFileName)
 }
 
 /**
@@ -29,63 +22,26 @@ async function checkChannelInfoExists(channel: TextChannel, user: string) {
  * @param user username of user
  * @returns nothing
  */
-export async function clearChannelInfo(filename: string, channel: TextChannel, user: string): Promise<boolean> {
-    const channelInfoExists: boolean = await checkChannelInfoExists(channel, user)
+export async function clearChannelInfo(filename: string, channel: TextChannel, userId: string): Promise<boolean> {
+    const channelInfoExists: boolean = await checkChannelInfoExists(channel)
 
     // If thread does not exist, file can't be found
     if (!channelInfoExists) return false
 
-    // Attempt to clear user channel history
-    const fullFileName = `data/${filename}-${user}.json`
-    const cleanedHistory: boolean = await new Promise((resolve) => {
-        fs.readFile(fullFileName, 'utf8', (error, data) => {
-            if (error)
-                console.log(`[Error: openChannelInfo] Incorrect file format`)
-            else {
-                const object = JSON.parse(data)
-                if (object['messages'].length === 0) // already empty, let user know
-                    resolve(false)
-                else {
-                    object['messages'] = [] // cleared history
-                    fs.writeFileSync(fullFileName, JSON.stringify(object, null, 2))
-                    resolve(true)
-                }
-            }
-        })
-    })
-    return cleanedHistory
-}
-
-export async function addToChannelContext(filename: string, channel : TextChannel | ThreadChannel, messages: UserMessage[] = []): Promise<void> {
-    const fullFileName = `data/${filename}-context.json`
-    if (fs.existsSync(fullFileName)) {
-        fs.readFile(fullFileName, 'utf8', (error, data) => {
-            if (error)
-                console.log(`[Error: addToChannelContext] Incorrect file format`)
-            else {
-                const object = JSON.parse(data)
-                if (object['messages'].length === 0)
-                    object['messages'] = messages as []
-                else if (object['messages'].length !== 0 && messages.length !== 0)
-                    object['messages'] = messages as []
-                fs.writeFileSync(fullFileName, JSON.stringify(object, null, 2))
-            }
-        })
-    } else { // channel context does not exist, create it
-        const object: Configuration = JSON.parse(
-            `{ 
-                \"id\": \"${channel?.id}\", 
-                \"name\": \"${channel?.name}\", 
-                \"messages\": []
-            }`
-        )
-
-        const directory = path.dirname(fullFileName)
-        if (!fs.existsSync(directory))
-            fs.mkdirSync(directory, { recursive: true })
-
+    // Attempt to clear user's messages from channel context
+    const fullFileName = `data/${filename}-channel-context.json`
+    try {
+        const data = fs.readFileSync(fullFileName, 'utf8')
+        const object = JSON.parse(data)
+        const originalLen = (object['messages'] || []).length
+        object['messages'] = (object['messages'] || []).filter((m: any) => m.userId !== userId)
+        const newLen = object['messages'].length
+        if (newLen === originalLen) return false
         fs.writeFileSync(fullFileName, JSON.stringify(object, null, 2))
-        console.log(`[Util: addToChannelContext] Created '${fullFileName}' in working directory`)
+        return true
+    } catch (err) {
+        console.log(`[Error: clearChannelInfo] ${err}`)
+        return false
     }
 }
 
@@ -94,30 +50,27 @@ export async function addToChannelContext(filename: string, channel : TextChanne
  * 
  * @param filename name of the json file for the channel by user
  * @param channel the text channel info
- * @param user the user's name
  * @param messages their messages
  */
-export async function openChannelInfo(filename: string, channel: TextChannel | ThreadChannel, user: string, messages: UserMessage[] = []): Promise<void> {
-    const fullFileName = `data/${filename}-${user}.json`
+export async function openChannelInfo(filename: string, channel: TextChannel | ThreadChannel, messages: UserMessage[] = []): Promise<void> {
+    const fullFileName = `data/${filename}-channel-context.json`
     if (fs.existsSync(fullFileName)) {
-        fs.readFile(fullFileName, 'utf8', (error, data) => {
-            if (error)
-                console.log(`[Error: openChannelInfo] Incorrect file format`)
-            else {
-                const object = JSON.parse(data)
-                if (object['messages'].length === 0)
-                    object['messages'] = messages as []
-                else if (object['messages'].length !== 0 && messages.length !== 0)
-                    object['messages'] = messages as []
-                fs.writeFileSync(fullFileName, JSON.stringify(object, null, 2))
-            }
-        })
+        try {
+            const data = fs.readFileSync(fullFileName, 'utf8')
+            const object = JSON.parse(data)
+            if (!object['messages'] || object['messages'].length === 0)
+                object['messages'] = messages as []
+            else if (object['messages'].length !== 0 && messages.length !== 0)
+                object['messages'] = messages as []
+            fs.writeFileSync(fullFileName, JSON.stringify(object, null, 2))
+        } catch (err) {
+            console.log(`[Error: openChannelInfo] Incorrect file format`)
+        }
     } else { // file doesn't exist, create it
         const object: Configuration = JSON.parse(
             `{ 
                 \"id\": \"${channel?.id}\", 
                 \"name\": \"${channel?.name}\", 
-                \"user\": \"${user}\", 
                 \"messages\": []
             }`
         )
@@ -138,16 +91,16 @@ export async function openChannelInfo(filename: string, channel: TextChannel | T
  * @param filename name of the json file for the channel by user
  * @param callback function to handle resolving message history
  */
-export async function getChannelInfo(filename: string, callback: (config: Channel | undefined) => void): Promise<void> {
-    const fullFileName = `data/${filename}`
+export async function getChannelInfo(filenameOrId: string, callback: (config: Channel | undefined) => void): Promise<void> {
+    // Accept either a full filename (e.g. "123-channel-context.json") or a raw channel id ("123")
+    const fullFileName = filenameOrId.endsWith('.json') ? `data/${filenameOrId}` : `data/${filenameOrId}-channel-context.json`
     if (fs.existsSync(fullFileName)) {
-        fs.readFile(fullFileName, 'utf8', (error, data) => {
-            if (error) {
-                callback(undefined)
-                return // something went wrong... stop
-            }
+        try {
+            const data = fs.readFileSync(fullFileName, 'utf8')
             callback(JSON.parse(data))
-        })
+        } catch (err) {
+            callback(undefined)
+        }
     } else {
         callback(undefined) // file not found
     }

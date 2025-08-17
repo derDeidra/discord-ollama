@@ -1,6 +1,5 @@
 import type { ClientEvents, Awaitable, Client } from 'discord.js'
 import { Ollama } from 'ollama'
-import { Queue } from '../queues/queue.js'
 
 // Export events through here to reduce amount of imports
 export { Events } from 'discord.js'
@@ -38,8 +37,6 @@ export type UserMessage = {
 export interface EventProps {
     client: Client,
     log: LogMethod,
-    msgHist: Queue<UserMessage>,
-    channelHistory: Queue<UserMessage>,
     ollama: Ollama,
     defaultModel: String
 }
@@ -74,14 +71,11 @@ export function event<T extends EventKeys>(key: T, callback: EventCallback<T>): 
  * Method to register events to the bot per file in the events directory
  * @param client initialized bot client
  * @param events all the exported events from the index.ts in the events dir
- * @param msgHist The message history of the bot
  * @param ollama the initialized ollama instance
  */
 export function registerEvents(
     client: Client,
     events: Event[],
-    msgHist: Queue<UserMessage>,
-    channelHistory: Queue<UserMessage>,
     ollama: Ollama,
     defaultModel: String
 ): void {
@@ -92,7 +86,7 @@ export function registerEvents(
 
             // Handle Errors, call callback, log errors as needed
             try {
-                callback({ client, log, msgHist, channelHistory, ollama, defaultModel }, ...args)
+                callback({ client, log, ollama, defaultModel }, ...args)
             } catch (error) {
                 log('[Uncaught Error]', error)
             }
