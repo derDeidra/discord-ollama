@@ -40,5 +40,6 @@ await client.login(Keys.clientToken)
 messageHistory.enqueue({
     role: 'assistant',
     content: `My name is ${client.user?.username}`,
-    images: []
+    images: [],
+    userId: client.user?.id ?? ''
 })

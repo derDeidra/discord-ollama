@@ -2,7 +2,7 @@ import { TextChannel } from 'discord.js'
 import { event, Events, normalMessage, UserMessage, clean, addToChannelContext } from '../utils/index.js'
 import {
     getChannelInfo, getServerConfig, getChannelConfig, openChannelInfo,
-    openConfig, ChannelConfig, ServerConfig, getAttachmentData, getTextFileAttachmentData
+    openConfig, openConfigMultiple, ChannelConfig, ServerConfig, getAttachmentData, getTextFileAttachmentData
 } from '../utils/index.js'
 
 /** 
@@ -65,7 +65,8 @@ export default event(Events.MessageCreate, async ({ log, msgHist, channelHistory
     channelHistory.enqueue({
         role: 'user',
         content: cleanedMessage,
-        images: messageAttachment || []
+    images: messageAttachment || [],
+    userId: message.author.id
     })
 
     // Store in Channel Context
@@ -125,12 +126,18 @@ export default event(Events.MessageCreate, async ({ log, msgHist, channelHistory
                 channelConfig = await new Promise((resolve) => {
                     getChannelConfig(`${message.channelId}-config.json`, (config) => {
                         if (config === undefined) {
-                            // create defaults silently if missing
-                            openConfig(`${message.channelId}-config.json`, 'switch-model', defaultModel)
-                            openConfig(`${message.channelId}-config.json`, 'modify-capacity', msgHist.capacity)
+                            // create defaults silently if missing (do all at once)
+                            const defaults: { [key: string]: any } = {
+                                'switch-model': defaultModel,
+                                'modify-capacity': msgHist.capacity,
+                                // set a default max-messages to avoid unbounded growth (default: 200)
+                                'max-messages': 200
+                            }
                             // seed system-prompt from server if present
                             if (serverConfig?.options['system-prompt'])
-                                openConfig(`${message.channelId}-config.json`, 'system-prompt', serverConfig.options['system-prompt'])
+                                defaults['system-prompt'] = serverConfig.options['system-prompt']
+
+                            openConfigMultiple(`${message.channelId}-config.json`, defaults)
                             resolve(undefined)
                             return
                         }
@@ -187,12 +194,18 @@ export default event(Events.MessageCreate, async ({ log, msgHist, channelHistory
         if (chatMessages.length === 0 && channelConfig?.options['system-prompt']) {
             const systemPrompt = channelConfig.options['system-prompt'] as string
             msgHist.setQueue([])
-            msgHist.enqueue({ role: 'system', content: systemPrompt, images: [] })
+            msgHist.enqueue({ role: 'system', content: systemPrompt, images: [], userId: client.user!!.id })
             // persist initial system prompt into channel history file
+            // trim persisted history to channel-configured max-logs if present
+            let seedItems = msgHist.getItems()
+            const seedMaxMessages = typeof channelConfig?.options['max-messages'] === 'number' ? (channelConfig!.options['max-messages'] as number) : undefined
+            if (typeof seedMaxMessages === 'number' && seedItems.length > seedMaxMessages)
+                seedItems = seedItems.slice(seedItems.length - seedMaxMessages)
+
             openChannelInfo(message.channelId,
                 message.channel as TextChannel,
                 'channel',
-                msgHist.getItems()
+                seedItems
             )
             // set chatMessages from queue
             chatMessages = msgHist.getItems()
@@ -235,7 +248,8 @@ export default event(Events.MessageCreate, async ({ log, msgHist, channelHistory
         msgHist.enqueue({
             role: 'user',
             content: cleanedMessage,
-            images: messageAttachment || []
+            images: messageAttachment || [],
+            userId: message.author.id
         })
 
         // response string for ollama to put its response
@@ -243,9 +257,6 @@ export default event(Events.MessageCreate, async ({ log, msgHist, channelHistory
 
         // If something bad happened, remove user query and stop
         if (response == undefined) { msgHist.pop(); return }
-        if (response == '') {
-            response = 'I am sorry, but I could not understand your message. Please try rephrasing it or ask a different question.';
-        }
 
         // if queue is full, remove the oldest message
         while (msgHist.size() >= msgHist.capacity) msgHist.dequeue()
@@ -254,14 +265,22 @@ export default event(Events.MessageCreate, async ({ log, msgHist, channelHistory
         msgHist.enqueue({
             role: 'assistant',
             content: response,
-            images: messageAttachment || []
+            images: messageAttachment || [],
+            userId: client.user!!.id
         })
 
         // only update the channel-scoped json on success
+        // trim persisted history to channel-configured max-logs if present
+        let itemsToPersist = msgHist.getItems()
+        const maxMessages = typeof channelConfig?.options['max-messages'] === 'number' ? (channelConfig!.options['max-messages'] as number) : undefined
+        if (typeof maxMessages === 'number' && itemsToPersist.length > maxMessages) {
+            itemsToPersist = itemsToPersist.slice(itemsToPersist.length - maxMessages)
+        }
+
         openChannelInfo(message.channelId,
             message.channel as TextChannel,
             'channel',
-            msgHist.getItems()
+            itemsToPersist
         )
     } catch (error: any) {
         msgHist.pop() // remove message because of failure

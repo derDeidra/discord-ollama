@@ -29,8 +29,10 @@ export type ChatParams = {
 export type UserMessage = {
     role: string,
     content: string,
-    images: string[] // May or may not have images in message
+    images: string[], // May or may not have images in message
+    userId: string
 }
+
 
 // Event properties
 export interface EventProps {

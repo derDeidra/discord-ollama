@@ -5,7 +5,8 @@ export interface ChannelConfiguration {
     'message-stream'?: boolean,
     'modify-capacity': number,
     'switch-model': string,
-    'system-prompt'?: string
+    'system-prompt'?: string,
+    'max-messages'?: number
 }
 
 export interface ServerConfiguration {

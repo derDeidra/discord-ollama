@@ -1,6 +1,7 @@
 import { ActivityType } from 'discord.js'
 import { event, Events, registerCommands } from '../utils/index.js'
 import commands from '../commands/index.js'
+import Keys from '../keys.js'
 
 // Log when the bot successfully logs in and export it
 export default event(Events.ClientReady, ({ log }, client) => {
@@ -14,4 +15,8 @@ export default event(Events.ClientReady, ({ log }, client) => {
     })
 
     log(`Logged in as ${client.user.username}.`)
+    // Log system prompt from environment if available (helpful for debugging)
+    if (Keys.systemPrompt && Keys.systemPrompt.trim().length > 0) {
+        log(`SYSTEM_PROMPT (from .env): ${Keys.systemPrompt}`)
+    }
 })

@@ -46,6 +46,47 @@ export function openConfig(filename: string, key: string, value: any) {
 }
 
 /**
+ * Method to open or create a config file and apply multiple option key/values at once.
+ *
+ * @param filename name of the file
+ * @param options object containing key/value pairs to set
+ */
+export function openConfigMultiple(filename: string, options: { [key: string]: any }) {
+    const fullFileName = `data/${filename}`
+
+    if (fs.existsSync(fullFileName)) {
+        try {
+            const data = fs.readFileSync(fullFileName, 'utf8')
+            const object = JSON.parse(data)
+            object['options'] = object['options'] ?? {}
+            for (const k in options)
+                object['options'][k] = options[k]
+            fs.writeFileSync(fullFileName, JSON.stringify(object, null, 2))
+        } catch (err) {
+            console.log(`[Error: openConfigMultiple] Incorrect file format`)
+        }
+    } else {
+        // Build a default Configuration object depending on whether any key is a server key
+        // Use the first key to decide server vs channel config naming
+        const sampleKey = Object.keys(options)[0] ?? 'switch-model'
+        let object: Configuration
+        if (isServerConfigurationKey(sampleKey))
+            object = JSON.parse('{ "name": "Server Confirgurations" }')
+        else
+            object = JSON.parse('{ "name": "User Confirgurations" }')
+
+        object['options'] = options
+
+        const directory = path.dirname(fullFileName)
+        if (!fs.existsSync(directory))
+            fs.mkdirSync(directory, { recursive: true })
+
+        fs.writeFileSync(fullFileName, JSON.stringify(object, null, 2))
+        console.log(`[Util: openConfigMultiple] Created '${filename}' in working directory`)
+    }
+}
+
+/**
  * Method to obtain the configurations of the message chat/thread
  * 
  * @param filename name of the configuration file to get

@@ -31,8 +31,8 @@ export async function blockResponse(params: ChatParams): Promise<ChatResponse> {
         messages: params.msgHist,
         options: {
             mirostat: 1,
-            mirostat_tau: 2.0,
-            top_k: 70
+            mirostat_tau: 4.0,
+            top_k: 120
         },
         stream: false
     })

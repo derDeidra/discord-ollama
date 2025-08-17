@@ -56,21 +56,36 @@ export async function normalMessage(
                 response = await blockResponse(params)
                 result = response.message.content
 
+                // If the model returned an empty or whitespace response, replace with a safe fallback
+                if (!result || result.trim().length === 0) {
+                    result = 'I am sorry, but I could not generate a response. Please try rephrasing your message.'
+                    await sentMessage.edit(result)
+                    return result
+                }
+
                 // check if message length > discord max for normal messages
                 if (result.length > 2000) {
-                    sentMessage.edit(result.slice(0, 2000))
+                    // edit first part
+                    if (result.slice(0, 2000).trim().length > 0)
+                        await sentMessage.edit(result.slice(0, 2000))
                     result = result.slice(2000)
 
                     // handle for rest of message that is >2000
                     while (result.length > 2000) {
-                        channel.send(result.slice(0, 2000))
+                        const chunk = result.slice(0, 2000)
+                        if (chunk.trim().length > 0)
+                            await channel.send(chunk)
                         result = result.slice(2000)
                     }
 
                     // last part of message
-                    channel.send(result)
-                } else // edit the 'generic' response to new message since <2000
-                    sentMessage.edit(result)
+                    if (result.trim().length > 0)
+                        await channel.send(result)
+                } else {
+                    // edit the 'generic' response to new message since <2000
+                    if (result.trim().length > 0)
+                        await sentMessage.edit(result)
+                }
             }
         } catch (error: any) {
             console.log(`[Util: messageNormal] Error creating message: ${error.message}`)
