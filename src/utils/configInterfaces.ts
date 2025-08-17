@@ -1,33 +1,35 @@
 import { ChannelType } from 'discord.js'
 import { UserMessage } from './index.js'
 
-export interface UserConfiguration {
+export interface ChannelConfiguration {
     'message-stream'?: boolean,
     'modify-capacity': number,
-    'switch-model': string
+    'switch-model': string,
+    'system-prompt'?: string
 }
 
 export interface ServerConfiguration {
     'toggle-chat'?: boolean,
+    'system-prompt'?: string,
 }
 
 /**
  * Parent Configuration interface
  * 
  * @see ServerConfiguration server settings per guild
- * @see UserConfiguration user configurations (only for the user for any server)
+ * @see ChannelConfiguration channel-scoped configurations
  */
 export interface Configuration {
     readonly name: string
-    options: UserConfiguration | ServerConfiguration
+    options: ChannelConfiguration | ServerConfiguration
 }
 
 /**
- * User config to use outside of this file
+ * Channel config to use outside of this file
  */
-export interface UserConfig {
+export interface ChannelConfig {
     readonly name: string
-    options: UserConfiguration
+    options: ChannelConfiguration
 }
 
 export interface ServerConfig {
@@ -63,5 +65,5 @@ export const UserCommand = [
  * @returns true if command is from Server Config, false otherwise
  */
 export function isServerConfigurationKey(key: string): key is keyof ServerConfiguration {
-    return ['toggle-chat'].includes(key);
+    return ['toggle-chat', 'system-prompt'].includes(key);
 }

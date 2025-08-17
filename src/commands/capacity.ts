@@ -21,13 +21,13 @@ export const Capacity: SlashCommand = {
         const channel = await client.channels.fetch(interaction.channelId)
         if (!channel || !UserCommand.includes(channel.type)) return
 
-        // set state of bot chat features
-        openConfig(`${interaction.user.username}-config.json`, interaction.commandName,
+        // save channel-level capacity
+        openConfig(`${interaction.channelId}-config.json`, interaction.commandName,
             interaction.options.getNumber('context-capacity')
         )
 
         interaction.reply({
-            content: `Max message history is now set to \`${interaction.options.get('context-capacity')?.value}\``,
+            content: `Max message history for this channel is now set to \`${interaction.options.get('context-capacity')?.value}\``,
             flags: MessageFlags.Ephemeral
         })
     }

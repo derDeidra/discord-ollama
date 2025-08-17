@@ -1,8 +1,8 @@
 import { TextChannel } from 'discord.js'
 import { event, Events, normalMessage, UserMessage, clean, addToChannelContext } from '../utils/index.js'
 import {
-    getChannelInfo, getServerConfig, getUserConfig, openChannelInfo,
-    openConfig, UserConfig, getAttachmentData, getTextFileAttachmentData
+    getChannelInfo, getServerConfig, getChannelConfig, openChannelInfo,
+    openConfig, ChannelConfig, ServerConfig, getAttachmentData, getTextFileAttachmentData
 } from '../utils/index.js'
 
 /** 
@@ -87,9 +87,10 @@ export default event(Events.MessageCreate, async ({ log, msgHist, channelHistory
     try {
         // Retrieve Server/Guild Preferences
         let attempt = 0
+        let serverConfig: ServerConfig | undefined
         while (attempt < maxRetries) {
             try {
-                await new Promise((resolve, reject) => {
+                serverConfig = await new Promise((resolve, reject) => {
                     getServerConfig(`${message.guildId}-config.json`, (config) => {
                         // check if config.json exists
                         if (config === undefined) {
@@ -116,59 +117,49 @@ export default event(Events.MessageCreate, async ({ log, msgHist, channelHistory
             }
         }
 
-        // Reset attempts for User preferences
-        attempt = 0
-        let userConfig: UserConfig | undefined
-
-        while (attempt < maxRetries) {
+    // Attempt to fetch channel-level config
+    attempt = 0
+    let channelConfig: ChannelConfig | undefined
+    while (attempt < maxRetries) {
             try {
-                // Retrieve User Preferences
-                userConfig = await new Promise((resolve, reject) => {
-                    getUserConfig(`${message.author.username}-config.json`, (config) => {
+                channelConfig = await new Promise((resolve) => {
+                    getChannelConfig(`${message.channelId}-config.json`, (config) => {
                         if (config === undefined) {
-                            openConfig(`${message.author.username}-config.json`, 'switch-model', defaultModel)
-                            reject(new Error(`No User Preferences is set up.\n\nCreating new preferences file for ${message.author.username}\nPlease try chatting again.`))
+                            // create defaults silently if missing
+                            openConfig(`${message.channelId}-config.json`, 'switch-model', defaultModel)
+                            openConfig(`${message.channelId}-config.json`, 'modify-capacity', msgHist.capacity)
+                            // seed system-prompt from server if present
+                            if (serverConfig?.options['system-prompt'])
+                                openConfig(`${message.channelId}-config.json`, 'system-prompt', serverConfig.options['system-prompt'])
+                            resolve(undefined)
                             return
                         }
-
-                        // check if there is a set capacity in config
-                        else if (typeof config.options['modify-capacity'] !== 'number')
-                            log(`Capacity is undefined, using default capacity of ${msgHist.capacity}.`)
-                        else if (config.options['modify-capacity'] === msgHist.capacity)
-                            log(`Capacity matches config as ${msgHist.capacity}, no changes made.`)
-                        else {
-                            log(`New Capacity found. Setting Context Capacity to ${config.options['modify-capacity']}.`)
-                            msgHist.capacity = config.options['modify-capacity']
-                        }
-
-                        // set stream state
-                        shouldStream = config.options['message-stream'] as boolean || false
-
-                        if (typeof config.options['switch-model'] !== 'string')
-                            reject(new Error(`No Model was set. Please set a model by running \`/switch-model <model of choice>\`.\n\nIf you do not have any models. Run \`/pull-model <model name>\`.`))
-
                         resolve(config)
                     })
                 })
-                break // successful
+                break
             } catch (error) {
                 ++attempt
                 if (attempt < maxRetries) {
-                    log(`Attempt ${attempt} failed for User Preferences. Retrying in ${delay}ms...`)
+                    log(`Attempt ${attempt} failed for Channel Preferences. Retrying in ${delay}ms...`)
                     await new Promise(ret => setTimeout(ret, delay))
                 } else
-                    throw new Error(`Could not retrieve User Preferences, please try chatting again...`)
+                    throw new Error(`Could not retrieve Channel Preferences, please try chatting again...`)
             }
         }
 
-        // need new check for "open/active" threads/channels here!
+    // (no per-user preferences anymore) -- channelConfig holds channel-level options
+
+
+        // Use a single, channel-scoped history file so the thread context is shared by everyone
+        const channelFilename = `${message.channelId}-channel.json`
         let chatMessages: UserMessage[] = await new Promise((resolve) => {
             // set new queue to modify
-            getChannelInfo(`${message.channelId}-${message.author.username}.json`, (channelInfo) => {
+            getChannelInfo(channelFilename, (channelInfo) => {
                 if (channelInfo?.messages)
                     resolve(channelInfo.messages)
                 else {
-                    log(`Channel/Thread ${message.channel}-${message.author.username} does not exist. File will be created shortly...`)
+                    log(`Channel/Thread ${message.channel} does not exist. File will be created shortly...`)
                     resolve([])
                 }
             })
@@ -176,25 +167,63 @@ export default event(Events.MessageCreate, async ({ log, msgHist, channelHistory
 
         if (chatMessages.length === 0) {
             chatMessages = await new Promise((resolve, reject) => {
+                // create/open a channel-scoped history file (user set to 'channel')
                 openChannelInfo(message.channelId,
                     message.channel as TextChannel,
-                    message.author.tag
+                    'channel'
                 )
-                getChannelInfo(`${message.channelId}-${message.author.username}.json`, (channelInfo) => {
+                getChannelInfo(channelFilename, (channelInfo) => {
                     if (channelInfo?.messages)
                         resolve(channelInfo.messages)
                     else {
-                        log(`Channel/Thread ${message.channel}-${message.author.username} does not exist. File will be created shortly...`)
-                        reject(new Error(`Failed to find ${message.author.username}'s history. Try chatting again.`))
+                        log(`Channel/Thread ${message.channel} does not exist. File will be created shortly...`)
+                        reject(new Error(`Failed to find channel history. Try chatting again.`))
                     }
                 })
             })
         }
 
-        if (!userConfig)
-            throw new Error(`Failed to initialize User Preference for **${message.author.username}**.\n\nIt's likely you do not have a model set. Please use the \`switch-model\` command to do that.`)
+        // If channel history is empty and channelConfig has a system-prompt, seed it
+        if (chatMessages.length === 0 && channelConfig?.options['system-prompt']) {
+            const systemPrompt = channelConfig.options['system-prompt'] as string
+            msgHist.setQueue([])
+            msgHist.enqueue({ role: 'system', content: systemPrompt, images: [] })
+            // persist initial system prompt into channel history file
+            openChannelInfo(message.channelId,
+                message.channel as TextChannel,
+                'channel',
+                msgHist.getItems()
+            )
+            // set chatMessages from queue
+            chatMessages = msgHist.getItems()
+        }
 
-        const model: string = userConfig.options['switch-model']
+
+    // Determine final model and capacity with precedence: channel -> default
+    // set stream state from channel config if present
+    shouldStream = (channelConfig?.options['message-stream'] as boolean) || false
+    const finalModel: string = `${(channelConfig?.options['switch-model'] as string) || defaultModel}`
+
+        // Channel-level capacity overrides user-level
+        if (typeof channelConfig?.options['modify-capacity'] === 'number') {
+            msgHist.capacity = channelConfig!.options['modify-capacity'] as number
+            log(`Applying channel-level capacity: ${msgHist.capacity}`)
+        }
+
+        // If no model resolved, fail with guidance
+        if (!finalModel)
+            throw new Error(`Failed to initialize a Model. Please set a model by running \`/switch-model <model of choice>\` or configure a channel model.`)
+
+        // get message attachment if exists
+        const attachment = message.attachments.first()
+        let messageAttachment: string[] = []
+
+        if (attachment && attachment.name?.endsWith(".txt"))
+            cleanedMessage += await getTextFileAttachmentData(attachment)
+        else if (attachment)
+            messageAttachment = await getAttachmentData(attachment)
+
+        const model: string = finalModel
 
         // set up new queue
         msgHist.setQueue(chatMessages)
@@ -210,10 +239,13 @@ export default event(Events.MessageCreate, async ({ log, msgHist, channelHistory
         })
 
         // response string for ollama to put its response
-        const response: string = await normalMessage(message, ollama, model, msgHist, shouldStream)
+        var response: string = await normalMessage(message, ollama, model, msgHist, shouldStream)
 
         // If something bad happened, remove user query and stop
         if (response == undefined) { msgHist.pop(); return }
+        if (response == '') {
+            response = 'I am sorry, but I could not understand your message. Please try rephrasing it or ask a different question.';
+        }
 
         // if queue is full, remove the oldest message
         while (msgHist.size() >= msgHist.capacity) msgHist.dequeue()
@@ -225,10 +257,10 @@ export default event(Events.MessageCreate, async ({ log, msgHist, channelHistory
             images: messageAttachment || []
         })
 
-        // only update the json on success
+        // only update the channel-scoped json on success
         openChannelInfo(message.channelId,
             message.channel as TextChannel,
-            message.author.tag,
+            'channel',
             msgHist.getItems()
         )
     } catch (error: any) {

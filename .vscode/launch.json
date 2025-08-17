@@ -1,0 +1,16 @@
+{
+    "configurations": [
+        {
+            "name": "Debug (tsx)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+            "program": "${workspaceFolder}/src/index.ts",
+            "cwd": "${workspaceFolder}",
+            "sourceMaps": true,
+            "env": {
+                "NODE_OPTIONS": "--enable-source-maps"
+            },
+        }
+    ]
+}

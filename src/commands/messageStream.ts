@@ -21,13 +21,13 @@ export const MessageStream: SlashCommand = {
         const channel = await client.channels.fetch(interaction.channelId)
         if (!channel || !UserCommand.includes(channel.type)) return
 
-        // save value to json and write to it
-        openConfig(`${interaction.user.username}-config.json`, interaction.commandName,
+        // save value to channel-level config
+        openConfig(`${interaction.channelId}-config.json`, interaction.commandName,
             interaction.options.getBoolean('stream')
         )
 
         interaction.reply({
-            content: `Message streaming is now set to: \`${interaction.options.getBoolean('stream')}\``,
+            content: `Message streaming for this channel is now set to: \`${interaction.options.getBoolean('stream')}\``,
             flags: MessageFlags.Ephemeral
         })
     }

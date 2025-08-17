@@ -9,6 +9,7 @@ import { ClearUserChannelHistory } from './cleanUserChannelHistory.js'
 import { PullModel } from './pullModel.js'
 import { SwitchModel } from './switchModel.js'
 import { DeleteModel } from './deleteModel.js'
+import { SetSystemPrompt } from './setSystemPrompt.js'
 
 export default [
     ThreadCreate,
@@ -21,4 +22,5 @@ export default [
     PullModel,
     SwitchModel,
     DeleteModel
+    ,SetSystemPrompt
 ] as SlashCommand[]

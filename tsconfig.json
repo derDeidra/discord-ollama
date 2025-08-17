@@ -21,7 +21,9 @@
     "baseUrl": ".",
     "paths": {
       "*": ["node_modules/"]
-    }
+    },
+    "sourceMap": true,
+    "inlineSources": true
   },
   // environment for env vars
   "include": ["src/**/*.ts"],

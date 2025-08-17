@@ -1,4 +1,4 @@
-import { Configuration, ServerConfig, UserConfig, isServerConfigurationKey } from '../index.js'
+import { Configuration, ServerConfig, ChannelConfig, isServerConfigurationKey } from '../index.js'
 import fs from 'fs'
 import path from 'path'
 
@@ -74,7 +74,7 @@ export async function getServerConfig(filename: string, callback: (config: Serve
  * @param filename name of the configuration file to get
  * @param callback function to allow a promise from getting the config
  */
-export async function getUserConfig(filename: string, callback: (config: UserConfig | undefined) => void): Promise<void> {
+export async function getChannelConfig(filename: string, callback: (config: ChannelConfig | undefined) => void): Promise<void> {
     const fullFileName = `data/${filename}`
 
     // attempt to read the file and get the configuration

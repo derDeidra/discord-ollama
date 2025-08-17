@@ -35,11 +35,11 @@ export const SwitchModel: SlashCommand = {
                     for (const model in response.models) {
                         const currentModel: ModelResponse = response.models[model]
                         if (currentModel.name.startsWith(modelInput)) {
-                            openConfig(`${interaction.user.username}-config.json`, interaction.commandName, modelInput)
+                            openConfig(`${interaction.channelId}-config.json`, interaction.commandName, modelInput)
 
                             // successful switch
                             interaction.editReply({
-                                content: `Successfully switched to **${modelInput}** as the preferred model for ${interaction.user.username}.`
+                                content: `Successfully switched to **${modelInput}** as the preferred model for this channel.`
                             })
                             switchSuccess = true
                         }
@@ -50,8 +50,8 @@ export const SwitchModel: SlashCommand = {
                 })
             // todo: problem can be here if async messes up
             if (switchSuccess) {
-                // set model now that it exists
-                openConfig(`${interaction.user.username}-config.json`, interaction.commandName, modelInput)
+                // set model now that it exists (redundant write)
+                openConfig(`${interaction.channelId}-config.json`, interaction.commandName, modelInput)
                 return
             }
 
@@ -65,7 +65,7 @@ export const SwitchModel: SlashCommand = {
                 error.message = "The Ollama service is not running. Please turn on/download the [service](https://ollama.com/)."
 
             interaction.editReply({
-                content: `Unable to switch user preferred model to **${modelInput}**.\n\n${error.message}`
+                content: `Unable to switch channel preferred model to **${modelInput}**.\n\n${error.message}`
             })
             return
         }

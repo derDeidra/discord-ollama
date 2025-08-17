@@ -25,10 +25,16 @@ This is a guide to all of the slash commands for the app.
     /shutoff are-you-sure true
     ```
 
+3. Set System Prompt
+    This command sets a server-wide system prompt which will be applied to newly-created channels and threads. Only administrators can run this command.
+
+    ```
+    /set-system-prompt prompt "You are a helpful assistant that speaks concisely."
+    ```
+
 ### Action Commands
 1. Clear Channel (Message) History  
-    This command will clear the history of the current channel for the user that calls it.  
-    Running the command in any channel will clear the message history.
+    This command clears the stored chat history for the current channel/thread (affects everyone). Running the command in any channel will clear that channel's message history.
 
     ```
     /clear-user-channel-history
@@ -58,46 +64,36 @@ This is a guide to all of the slash commands for the app.
     /private-thread
     ```
 
-### User Preference Commands
+### Channel Preference Commands
 1. Capacity  
-    This command changes how much context it will keep in conversations with the app.  
-    This is applied for all of existing chats when interacting with the app.  
+    Change how much context the bot will keep for this channel's conversations. This applies to the current and future chats in this channel/thread.
 
-    Below sets the message history capacity to at most 5 messages at once.
+    Below sets the message history capacity for the channel to at most 5 messages.
 
     ```
     /modify-capacity context-capacity 5
     ```
 
 2. Message Stream  
-    This command will toggle whether or not the app will "stream" a response.  
-    (think of how ChatGPT and other interfaces do this)
-
-    Below sets the `stream` to true to make the app respond in increments.
+    Toggle whether the app will "stream" a response in this channel. Streaming updates can be slow due to Discord rate limits.
 
     ```
     /message-stream stream true
     ```
-    **This is very slow on Discord because "spamming" changes in a channel within a period of 5 seconds is not allowed.**
 
 3. Message Style  
-    This command allows a user to select whether to embed the app's response. 
+    Choose whether the bot's responses in this channel are embedded or plain messages.
 
     ```
     /message-style embed true
     ```
-
-    This allows the app to respond as a user would normally respond.
 
     ```
     /message-style embed false
     ```
 
 4. Switch Model  
-    This command will switch the user-preferred model so long as it exists in within the local ollama service or from the [Ollama Model Library](https://ollama.com/library).  
-    If it cannot be found locally, it will attempt to find it in the model library.
-
-    Below we are trying to switch to a specific model size. 
+    Switch the model that this channel will use (must exist locally or in the Ollama Model Library).
 
     ```
     /switch-model model-to-use llama3.2:1.3b
