@@ -64,7 +64,17 @@ export async function getServerConfig(filename: string, callback: (config: Serve
             callback(JSON.parse(data))
         })
     } else {
-        callback(undefined) // file not found
+        // If a server config file doesn't exist, provide a sensible default.
+        // Use SYSTEM_PROMPT from the environment if present to seed the server config.
+        const envSystemPrompt = process.env['SYSTEM_PROMPT']
+        const defaultConfig: ServerConfig = {
+            name: 'Server Confirgurations',
+            options: {
+                'toggle-chat': true,
+                ...(envSystemPrompt ? { 'system-prompt': envSystemPrompt } : {})
+            }
+        }
+        callback(defaultConfig)
     }
 }
 
