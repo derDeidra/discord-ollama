@@ -14,28 +14,22 @@
 Ollama is an AI model management tool that allows users to install and use custom large language models locally.  
 The project aims to:
 * [x] Create a Discord bot that will utilize Ollama and chat to chat with users! 
-  * [x] User and Server Preferences
-  * [x] Message Persistance
+  * [x] User Preferences on Chat
+  * [x] Message Persistance on Channels and Threads
+    * [x] Threads
+    * [x] Channels
   * [x] Containerization with Docker
   * [x] Slash Commands Compatible
-    * [ ] Summary Command
-    * [ ] Model Info Command
-    * [ ] List Models Command
-    * [x] Pull Model Command
-    * [x] Switch Model Command
-    * [x] Delete Model Command
-    * [x] Create Thread Command
-    * [x] Create Private Thread Command
-    * [x] Message Stream Command
-    * [x] Change Message History Size Command
-    * [x] Clear Channel History Command (User Only)
-    * [x] Administrator Role Compatible
   * [x] Generated Token Length Handling for >2000
     * [x] Token Length Handling of any message size
-  * [x] Multi-User Chat Generation - This was built in from Ollama `v0.2.1+`
+  * [x] User vs. Server Preferences
+  * [x] Administrator Role Compatible
+  * [x] Multi-User Chat Generation (Multiple users chatting at the same time) - This was built in from Ollama `v0.2.1+`
+  * [x] Automatic and Manual model pulling through the Discord client
   * [ ] Ollama Tool Support Implementation
   * [ ] Enhanced Channel Context Awareness
   * [ ] Improved User Replied Triggers
+
 
 Further, Ollama provides the functionality to utilize custom models or provide context for the top-layer of any model available through the Ollama model library.
 * [Customize a model](https://github.com/ollama/ollama#customize-a-model)
@@ -81,14 +75,6 @@ This release removes per-user preferences. Configuration is now channel-scoped o
 - Server config files: `data/<guildId>-config.json` (can contain `system-prompt`).
 - Channel config files: `data/<channelId>-config.json` (contain `switch-model`, `modify-capacity`, `message-stream`, `system-prompt`).
 - Channel chat history: `data/<channelId>-channel.json`.
-
-Migration helper
-
-If you have older per-user files in `data/` you can safely archive them (recommended) by running:
-
-```bash
-npm run migrate:user-files
-```
 
 This moves non-channel and non-server config JSON files into `data/archived_user_configs/`.
 
