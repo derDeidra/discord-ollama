@@ -30,9 +30,11 @@ export async function blockResponse(params: ChatParams): Promise<ChatResponse> {
         model: params.model,
         messages: params.msgHist,
         options: {
-            mirostat: 1,
-            mirostat_tau: 2.0,
-            top_k: 70
+            temperature: 0.8,
+            top_p: 0.95,
+            top_k: 25,
+            typical_p: 1.0,
+            repeat_penalty: 1.12,
         },
         stream: false
     })
