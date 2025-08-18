@@ -6,6 +6,7 @@ export const Keys = {
     portAddress: getEnvVar('OLLAMA_PORT', '11434'), // default ollama port if none
     defaultModel: getEnvVar('MODEL', 'llama3.2'),
     systemPrompt: getEnvVar('SYSTEM_PROMPT', 'You are a discord assistant bot. Be helpful, informative, and engaging. Do not engage in any illegal, harmful, or inappropriate activities.'),
+    maxContextTokens: Number.parseInt(getEnvVar('MAX_CONTEXT_TOKENS', '4096'), 10),
 } as const // readonly keys
 
 export default Keys

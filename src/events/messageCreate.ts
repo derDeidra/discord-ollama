@@ -1,5 +1,6 @@
 import { TextChannel } from 'discord.js'
 import { event, Events, normalMessage, UserMessage, clean } from '../utils/index.js'
+import Keys from '../keys.js'
 import {
     getChannelInfo, getServerConfig, getChannelConfig, openChannelInfo,
     openConfig, openConfigMultiple, ChannelConfig, ServerConfig, getAttachmentData, getTextFileAttachmentData
@@ -56,7 +57,23 @@ export default event(Events.MessageCreate, async ({ log, ollama, client, default
     else if (attachment)
         messageAttachment = await getAttachmentData(attachment)
 
-    while (channelHistory.length >= 20) channelHistory.shift() // Limit to 20 messages in history
+    // Trim channel history to fit within the configured token window.
+    // We use a simple token estimator (split on whitespace) as an approximation.
+    function estimateTokens(text: string): number {
+        if (!text) return 0
+        // split on whitespace and punctuation-ish characters to approximate tokens
+        return text.split(/\s+|(?=[.,!?;:\-()\[\]{}])/).filter(Boolean).length
+    }
+
+    // Calculate current token usage of the channel history
+    let totalTokens = channelHistory.reduce((sum, m) => sum + estimateTokens(m.content), 0)
+    const maxTokens = (Keys as any).maxContextTokens
+
+    // If history exceeds max tokens, remove oldest messages until within budget
+    while (totalTokens > maxTokens && channelHistory.length > 0) {
+        const removed = channelHistory.shift()!
+        totalTokens -= estimateTokens(removed.content)
+    }
 
     // push user response to channel history
     channelHistory.push({
