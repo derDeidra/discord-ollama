@@ -181,15 +181,20 @@ export default event(Events.MessageCreate, async ({ log, ollama, client, default
 
         // First message is now the system prompt
         // If there are more than 3 non-system prompt messages, we will summarize the history beyond those 3 messages + except for the system prompt
-        if (channelHistory.length > 4 && channelHistory[0].role === 'system') {
+        if (channelHistory.length > 5) {
             // Grab all of the messages except the first system prompt and the last 3 messages
             const summarizer_system_prompt = `Paraphrase the recent conversation into brief bullet points capturing facts, constraints, decisions, and user preferences. Do NOT copy sentences verbatim. 5–10 bullets max. Do NOT mention the base system prompt. But continue to pass along information in any previous summaries.`
             // Add the summarizer system prompt as the first message
             const summarizer_prompt = [
-                { role: 'system', content: summarizer_system_prompt, images: [], userId: 'system' },
+                { 
+                    role: 'system', 
+                    content: summarizer_system_prompt, 
+                    images: [], 
+                    userId: 'system' 
+                },
                 { 
                     role: 'user', 
-                    content: summarizer_system_prompt + channelHistory.slice(1, -3).map(m => {
+                    content: summarizer_system_prompt + channelHistory.slice(1).map(m => {
                         if (m.role === 'user'){
                             return `[user ${m.userId}]: ` + m.content
                         } else if (m.role === 'assistant') {
@@ -211,8 +216,8 @@ export default event(Events.MessageCreate, async ({ log, ollama, client, default
             // Replace summarized messages with the summary
             channelHistory = [
                 channelHistory[0], // Keep the system prompt
-                { role: 'assistant', content: summary.message.content, images: [], userId: 'assistant' },
-                ...channelHistory.slice(-3) // Keep the last 3 messages
+                { role: 'assistant', content: 'SUMMARY: ' + summary.message.content, images: [], userId: 'assistant' },
+                ...channelHistory.filter(msg => !msg.content.startsWith('SUMMARY: ')).slice(-3) // Keep the last 3 messages that are not summaries
             ]
         }
 
