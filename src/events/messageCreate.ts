@@ -1,5 +1,5 @@
 import { TextChannel } from 'discord.js'
-import { event, Events, normalMessage, UserMessage, clean } from '../utils/index.js'
+import { event, Events, normalMessage, UserMessage, clean, blockResponse } from '../utils/index.js'
 import Keys from '../keys.js'
 import {
     getChannelInfo, getServerConfig, getChannelConfig, openChannelInfo,
@@ -168,17 +168,53 @@ export default event(Events.MessageCreate, async ({ log, ollama, client, default
             }
         }
 
+        // Determine final model and capacity with precedence: channel -> default
+        // set stream state from channel config if present
+        shouldStream = (channelConfig?.options['message-stream'] as boolean) || false
+        const finalModel: string = `${(channelConfig?.options['switch-model'] as string) || defaultModel}`
+
         // Ensure the channel-scoped history (channelHistory) has the server/channel system prompt as the first message
         if (channelConfig?.options['system-prompt'] && (channelHistory.length === 0  || channelHistory[0].role !== 'system')) {
             const systemPrompt = channelConfig.options['system-prompt'] as string
             channelHistory.unshift({ role: 'system', content: systemPrompt, images: [], userId: client.user!!.id })
         }
 
-
-        // Determine final model and capacity with precedence: channel -> default
-        // set stream state from channel config if present
-        shouldStream = (channelConfig?.options['message-stream'] as boolean) || false
-        const finalModel: string = `${(channelConfig?.options['switch-model'] as string) || defaultModel}`
+        // First message is now the system prompt
+        // If there are more than 3 non-system prompt messages, we will summarize the history beyond those 3 messages + except for the system prompt
+        if (channelHistory.length > 4 && channelHistory[0].role === 'system') {
+            // Grab all of the messages except the first system prompt and the last 3 messages
+            const summarizer_system_prompt = `Paraphrase the recent conversation into brief bullet points capturing facts, constraints, decisions, and user preferences. Do NOT copy sentences verbatim. 5–10 bullets max. Do NOT mention the base system prompt. But continue to pass along information in any previous summaries.`
+            // Add the summarizer system prompt as the first message
+            const summarizer_prompt = [
+                { role: 'system', content: summarizer_system_prompt, images: [], userId: 'system' },
+                { 
+                    role: 'user', 
+                    content: summarizer_system_prompt + channelHistory.slice(1, -3).map(m => {
+                        if (m.role === 'user'){
+                            return `[user ${m.userId}]: ` + m.content
+                        } else if (m.role === 'assistant') {
+                            return `[assistant]: ` + m.content
+                        } else if (m.role === 'system') {
+                            return `[system]: ` + m.content
+                        }
+                    }).join('\n') + summarizer_system_prompt,
+                    images: [],
+                    userId: 'user'
+                }
+            ]
+            // Summarize the messages
+            const summary = await blockResponse({
+                model: finalModel,
+                ollama: ollama,
+                msgHist: summarizer_prompt
+            })
+            // Replace summarized messages with the summary
+            channelHistory = [
+                channelHistory[0], // Keep the system prompt
+                { role: 'assistant', content: summary.message.content, images: [], userId: 'assistant' },
+                ...channelHistory.slice(-3) // Keep the last 3 messages
+            ]
+        }
 
         // If no model resolved, fail with guidance
         if (!finalModel)
@@ -206,7 +242,7 @@ export default event(Events.MessageCreate, async ({ log, ollama, client, default
             role: 'assistant',
             content: response,
             images: messageAttachment || [],
-            userId: client.user!!.id
+            userId: 'assistant'
         })
 
         // write final output to channel history
