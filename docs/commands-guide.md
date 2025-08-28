@@ -8,7 +8,7 @@ This is a guide to all of the slash commands for the app.
 > Administrator commands are only usable by actual administrators on the Discord server.
 
 > [!TIP]
-> Server owners can map Discord role IDs to commands in `data/<guild-id>-config.json` under the `command-roles` section.
+> Server owners can map Discord role IDs to commands in `data/<guild-id>-config.json` under the `commandRoles` section.
 > Each command lists the roles allowed to run it. See [Command Permissions](./command-permissions.md) for configuration details.
 
 ### Guild Commands (Administrator)
@@ -102,3 +102,4 @@ This is a guide to all of the slash commands for the app.
     ```
     /switch-model model-to-use llama3.2:1.3b
     ```
+

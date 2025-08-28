@@ -12,7 +12,7 @@ config({ path: envFilePath })
  * Method to validate if environment variables found in file utils/env.ts
  * 
  * @param name Name of the environment variable in .env
- * @param fallback fallback value to set if environment variable is not set (used manually in src/keys.ts)
+ * @param fallback fallback value to set if environment variable is not set (used manually in src/config.ts)
  * @returns environment variable value
  */
 export function getEnvVar(name: string, fallback?: string): string {

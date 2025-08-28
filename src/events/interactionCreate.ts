@@ -1,6 +1,8 @@
 import { MessageFlags } from 'discord.js'
-import { event, Events, getServerConfig } from '../utils/index.js'
+import { event, Events } from '../utils/index.js'
+import Config from '../config.js'
 import commands from '../commands/index.js'
+
 
 /**
  * Interaction creation listener for the client
@@ -15,7 +17,7 @@ export default event(Events.InteractionCreate, async ({ log, client }, interacti
     const command = commands.find(command => command.name === interaction.commandName)
     if (!command) return
 
-    // Guard: verify default permissions
+        // Guard: verify default permissions
     if (command.defaultMemberPermissions && !interaction.memberPermissions?.has(command.defaultMemberPermissions)) {
         interaction.reply({ content: 'You do not have permission to run this command.', flags: MessageFlags.Ephemeral })
         return
@@ -23,11 +25,9 @@ export default event(Events.InteractionCreate, async ({ log, client }, interacti
 
     // Guard: verify role-based access from server configuration
     if (interaction.guildId) {
-        const serverConfig = await new Promise(resolve =>
-            getServerConfig(`${interaction.guildId}-config.json`, resolve)
-        )
+        const serverConfig = await Config.getServerConfig(interaction.guildId)
 
-        const commandRoles = serverConfig?.options['command-roles'] || {}
+        const commandRoles = serverConfig?.options.commandRoles || {}
         const requiredRoleIds: string[] = commandRoles[command.name] || []
 
         if (requiredRoleIds.length > 0) {
@@ -45,6 +45,6 @@ export default event(Events.InteractionCreate, async ({ log, client }, interacti
         }
     }
 
-    // the command exists and permissions are valid, execute it
+    // the command exists, execute it
     command.run(client, interaction)
 })

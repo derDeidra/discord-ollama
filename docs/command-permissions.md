@@ -20,11 +20,11 @@ The following commands can have role restrictions applied:
 
 ## Server command role mapping
 
-Server configuration files at `data/<guild-id>-config.json` include a `command-roles` map. Each command is listed with an array of Discord role IDs that are allowed to run it. The default configuration lists all commands with empty arrays so you can fill in the appropriate roles.
+Server configuration files at `data/<guild-id>-config.json` include a `commandRoles` map. Each command is listed with an array of Discord role IDs that are allowed to run it. The default configuration lists all commands with empty arrays so you can fill in the appropriate roles.
 
 ```json
 {
-  "command-roles": {
+  "commandRoles": {
     "thread": [],
     "private-thread": [],
     "message-stream": [],
@@ -44,7 +44,7 @@ A ready-to-edit example config file listing all commands is available at [`sampl
 
 ## Permission guard
 
-Before executing a command, the bot checks `command-roles` for that command. If any role IDs are specified, the member must have at least one of them. Any Discord `defaultMemberPermissions` declared on the command are also enforced.
+Before executing a command, the bot checks `commandRoles` for that command. If any role IDs are specified, the member must have at least one of them. Any Discord `defaultMemberPermissions` declared on the command are also enforced.
 
 ## Updating roles without code changes
 

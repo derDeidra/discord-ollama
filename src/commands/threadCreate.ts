@@ -1,5 +1,6 @@
 import { ChannelType, Client, CommandInteraction, MessageFlags, TextChannel, ThreadChannel } from 'discord.js'
-import { AdminCommand, openChannelInfo, SlashCommand } from '../utils/index.js'
+import { AdminCommand, SlashCommand } from '../utils/index.js'
+import { ensureChannelInfo } from '../storage/index.js'
 
 export const ThreadCreate: SlashCommand = {
     name: 'thread',
@@ -21,7 +22,7 @@ export const ThreadCreate: SlashCommand = {
         thread.send(`Hello ${interaction.user} and others! \n\nIt's nice to meet you. Please talk to me by typing **@${client.user?.username}** with your message.`)
 
         // handle storing this chat channel
-        openChannelInfo(thread.id, thread as ThreadChannel)
+        await ensureChannelInfo(thread.id, thread as ThreadChannel)
 
         // user only reply
         return interaction.reply({

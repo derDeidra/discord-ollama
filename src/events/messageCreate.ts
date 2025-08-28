@@ -1,11 +1,7 @@
-import { TextChannel } from 'discord.js'
-import { event, Events, normalMessage, UserMessage, clean } from '../utils/index.js'
-import Keys from '../keys.js'
+import { event, Events, normalMessage, UserMessage, clean, ChannelConfig, getAttachmentData, getTextFileAttachmentData } from '../utils/index.js'
+import { ChannelStorage } from '../storage/index.js'
+import Config from '../config.js'
 import { requestDispatcher } from '../queues/requestDispatcher.js'
-import {
-    getChannelInfo, getServerConfig, getChannelConfig, openChannelInfo,
-    openConfig, openConfigMultiple, ChannelConfig, ServerConfig, getAttachmentData, getTextFileAttachmentData
-} from '../utils/index.js'
 
 /** 
  * Max Message length for free users is 2000 characters (bot or not).
@@ -13,8 +9,9 @@ import {
  * 
  * @param message the message received from the channel
  */
-export default event(Events.MessageCreate, async ({ log, ollama, client, defaultModel }, message) => {
+export default event(Events.MessageCreate, async ({ log, ollama, client }, message) => {
     const clientId = client.user!!.id
+    const DISPATCH_TIMEOUT = 15000 // milliseconds to wait in queue before failing
     const DISPATCH_TIMEOUT = 15000 // milliseconds to wait in queue before failing
     let cleanedMessage = clean(message.content, clientId)
     if (cleanedMessage.length < 5) return // ignore messages that are too short after cleaning
@@ -24,32 +21,7 @@ export default event(Events.MessageCreate, async ({ log, ollama, client, default
     if (message.author.username === message.client.user.username) return
 
     // Save User Chat even if not for the bot
-    let channelHistory: UserMessage[] = await new Promise((resolve) => {
-        getChannelInfo(message.channelId, (channelInfo) => {
-            if (channelInfo?.messages)
-                resolve(channelInfo.messages)
-            else {
-                log(`Channel/Thread ${message.channel} channel-context does not exist. File will be created shortly...`)
-                resolve([])
-            }
-        })
-    })
-
-    if (channelHistory.length === 0) {
-        channelHistory = await new Promise((resolve) => {
-            openChannelInfo(
-                message.channelId,
-                message.channel as TextChannel
-            )
-            getChannelInfo(message.channelId, (channelInfo) => {
-                if (channelInfo?.messages)
-                    resolve(channelInfo.messages)
-                else {
-                    log(`Channel/Thread ${message.channel} channel-context does not exist. File will be created shortly...`)
-                }
-            })
-        })
-    }
+    let channelHistory: UserMessage[] = await ChannelStorage.getHistory(message.channelId)
 
     // get message attachment if exists
     const attachment = message.attachments.first()
@@ -70,7 +42,7 @@ export default event(Events.MessageCreate, async ({ log, ollama, client, default
 
     // Calculate current token usage of the channel history
     let totalTokens = channelHistory.reduce((sum, m) => sum + estimateTokens(m.content), 0)
-    const maxTokens = (Keys as any).maxContextTokens
+    const maxTokens = Config.getMaxContextTokens()
 
     // If history exceeds max tokens, remove oldest messages until within budget
     while (totalTokens > maxTokens && channelHistory.length > 0) {
@@ -89,96 +61,30 @@ export default event(Events.MessageCreate, async ({ log, ollama, client, default
     // Only respond if message mentions the bot
     if (!message.mentions.has(clientId)){
         // Store in Channel Context even if not responding
-        openChannelInfo(
-            message.channelId, 
-            message.channel as TextChannel,
-            channelHistory
-        )
+        await ChannelStorage.writeHistory(message.channelId, channelHistory)
         return
-    } 
+    }
 
     // default stream to false
     let shouldStream = false
 
-    // Params for Preferences Fetching
-    const maxRetries = 3
-    const delay = 1000 // in millisecons
+      try {
+          const channelConfig: ChannelConfig = await Config.getChannelConfig(
+              message.guildId!,
+              message.channelId
+          )
 
-    try {
-        // Retrieve Server/Guild Preferences
-        let attempt = 0
-        let serverConfig: ServerConfig | undefined
-        while (attempt < maxRetries) {
-            try {
-                serverConfig = await new Promise((resolve, reject) => {
-                    getServerConfig(`${message.guildId}-config.json`, (config) => {
-                        // check if config.json exists
-                        if (config === undefined) {
-                            // Allowing chat options to be available
-                            openConfig(`${message.guildId}-config.json`, 'toggle-chat', true)
-                            reject(new Error('Failed to locate or create Server Preferences\n\nPlease try chatting again...'))
-                        }
-
-                        // check if chat is disabled
-                        else if (!config.options['toggle-chat'])
-                            reject(new Error('Admin(s) have disabled chat features.\n\n Please contact your server\'s admin(s).'))
-                        else
-                            resolve(config)
-                    })
-                })
-                break // successful
-            } catch (error) {
-                ++attempt
-                if (attempt < maxRetries) {
-                    log(`Attempt ${attempt} failed for Server Preferences. Retrying in ${delay}ms...`)
-                    await new Promise(ret => setTimeout(ret, delay))
-                } else
-                    throw new Error(`Could not retrieve Server Preferences, please try chatting again...`)
-            }
-        }
-
-        // Attempt to fetch channel-level config
-        attempt = 0
-        let channelConfig: ChannelConfig | undefined
-        while (attempt < maxRetries) {
-            try {
-                channelConfig = await new Promise((resolve) => {
-                    getChannelConfig(`${message.channelId}-config.json`, (config) => {
-                        if (config === undefined) {
-                            // create defaults silently if missing (do all at once)
-                            const defaults: { [key: string]: any } = {
-                                'switch-model': defaultModel,
-                            }
-                            // seed system-prompt from server if present
-                            if (serverConfig?.options['system-prompt'])
-                                defaults['system-prompt'] = serverConfig.options['system-prompt']
-
-                            openConfigMultiple(`${message.channelId}-config.json`, defaults)
-                            resolve(undefined)
-                            return
-                        }
-                        resolve(config)
-                    })
-                })
-                break
-            } catch (error) {
-                ++attempt
-                if (attempt < maxRetries) {
-                    log(`Attempt ${attempt} failed for Channel Preferences. Retrying in ${delay}ms...`)
-                    await new Promise(ret => setTimeout(ret, delay))
-                } else
-                    throw new Error(`Could not retrieve Channel Preferences, please try chatting again...`)
-            }
-        }
+        if (!channelConfig.options.toggleChat)
+            throw new Error('Admin(s) have disabled chat features.\n\n Please contact your server\'s admin(s).')
 
         // Determine final model and capacity with precedence: channel -> default
         // set stream state from channel config if present
-        shouldStream = (channelConfig?.options['message-stream'] as boolean) || false
-        const finalModel: string = `${(channelConfig?.options['switch-model'] as string) || defaultModel}`
+        shouldStream = channelConfig.options.messageStream || false
+        const finalModel: string = channelConfig.options.switchModel
 
         // Ensure the channel-scoped history (channelHistory) has the server/channel system prompt as the first message
-        if (channelConfig?.options['system-prompt'] && (channelHistory.length === 0  || channelHistory[0].role !== 'system')) {
-            const systemPrompt = channelConfig.options['system-prompt'] as string
+        if (channelConfig.options.systemPrompt && (channelHistory.length === 0  || channelHistory[0].role !== 'system')) {
+            const systemPrompt = channelConfig.options.systemPrompt
             channelHistory.unshift({ role: 'system', content: systemPrompt, images: [], userId: client.user!!.id })
         }
 
@@ -212,9 +118,11 @@ export default event(Events.MessageCreate, async ({ log, ollama, client, default
             ]
             // Summarize the messages
             const summary = await requestDispatcher.blockResponse({
+            const summary = await requestDispatcher.blockResponse({
                 model: finalModel,
                 ollama: ollama,
                 msgHist: summarizer_prompt
+            }, DISPATCH_TIMEOUT)
             }, DISPATCH_TIMEOUT)
             // Replace summarized messages with the summary
             channelHistory = [
@@ -228,18 +136,17 @@ export default event(Events.MessageCreate, async ({ log, ollama, client, default
         if (!finalModel)
             throw new Error(`Failed to initialize a Model. Please set a model by running \`/switch-model <model of choice>\` or configure a channel model.`)
 
-        // get message attachment if exists
-        const attachment = message.attachments.first()
-        let messageAttachment: string[] = []
-
-        if (attachment && attachment.name?.endsWith(".txt"))
-            cleanedMessage += await getTextFileAttachmentData(attachment)
-        else if (attachment)
-            messageAttachment = await getAttachmentData(attachment)
-
         const model: string = finalModel
 
         // response string for ollama to put its response
+        var response: string = await normalMessage(
+            message,
+            ollama,
+            model,
+            channelHistory,
+            shouldStream,
+            DISPATCH_TIMEOUT
+        )
         var response: string = await normalMessage(
             message,
             ollama,
@@ -261,16 +168,10 @@ export default event(Events.MessageCreate, async ({ log, ollama, client, default
         })
 
         // write final output to channel history
-        openChannelInfo(message.channelId,
-            message.channel as TextChannel,
-            channelHistory
-        )
+        await ChannelStorage.writeHistory(message.channelId, channelHistory)
     } catch (error: any) {
         channelHistory.pop() // remove message because of failure
-        openChannelInfo(message.channelId,
-            message.channel as TextChannel,
-            channelHistory
-        )
+        await ChannelStorage.writeHistory(message.channelId, channelHistory)
         message.reply(`**Error Occurred:**\n\n**Reason:** *${error.message}*`)
     }
 })

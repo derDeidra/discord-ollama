@@ -1,7 +1,8 @@
 import { ApplicationCommandOptionType, Client, ChatInputCommandInteraction } from "discord.js"
 import { ollama } from "../client.js"
 import { ModelResponse } from "ollama"
-import { openConfig, UserCommand, SlashCommand } from "../utils/index.js"
+import { UserCommand, SlashCommand } from "../utils/index.js"
+import Config from "../config.js"
 
 export const SwitchModel: SlashCommand = {
     name: 'switch-model',
@@ -31,11 +32,11 @@ export const SwitchModel: SlashCommand = {
             // Phase 1: Switch to the model
             let switchSuccess = false
             await ollama.list()
-                .then(response => {
+                .then(async response => {
                     for (const model in response.models) {
                         const currentModel: ModelResponse = response.models[model]
                         if (currentModel.name.startsWith(modelInput)) {
-                            openConfig(`${interaction.channelId}-config.json`, interaction.commandName, modelInput)
+                            await Config.updateChannelConfig(interaction.channelId, { switchModel: modelInput })
 
                             // successful switch
                             interaction.editReply({
@@ -51,7 +52,7 @@ export const SwitchModel: SlashCommand = {
             // todo: problem can be here if async messes up
             if (switchSuccess) {
                 // set model now that it exists (redundant write)
-                openConfig(`${interaction.channelId}-config.json`, interaction.commandName, modelInput)
+                await Config.updateChannelConfig(interaction.channelId, { switchModel: modelInput })
                 return
             }
 

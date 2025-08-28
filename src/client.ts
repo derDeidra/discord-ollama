@@ -3,7 +3,7 @@ import { Ollama } from 'ollama'
 import { Queue } from './queues/queue.js'
 import { UserMessage, registerEvents } from './utils/index.js'
 import Events from './events/index.js'
-import Keys from './keys.js'
+import Config from './config.js'
 
 // initialize the client with the following permissions when logging in
 const client = new Client({
@@ -17,14 +17,14 @@ const client = new Client({
 
 // initialize connection to ollama container
 export const ollama = new Ollama({
-    host: `http://${Keys.ipAddress}:${Keys.portAddress}`,
+    host: Config.getOllamaUrl(),
 })
 
 // register all events
-registerEvents(client, Events, ollama, Keys.defaultModel)
+registerEvents(client, Events, ollama)
 
 // Try to log in the client
-await client.login(Keys.clientToken)
+await client.login(Config.getClientToken())
     .catch((error) => {
         console.error('[Login Error]', error)
         process.exit(1)

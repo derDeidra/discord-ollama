@@ -1,5 +1,6 @@
 import { ApplicationCommandOptionType, Client, ChatInputCommandInteraction, MessageFlags } from 'discord.js'
-import { openConfig, SlashCommand, UserCommand } from '../utils/index.js'
+import { SlashCommand, UserCommand } from '../utils/index.js'
+import Config from '../config.js'
 
 export const MessageStream: SlashCommand = {
     name: 'message-stream',
@@ -22,9 +23,9 @@ export const MessageStream: SlashCommand = {
         if (!channel || !UserCommand.includes(channel.type)) return
 
         // save value to channel-level config
-        openConfig(`${interaction.channelId}-config.json`, interaction.commandName,
-            interaction.options.getBoolean('stream')
-        )
+        await Config.updateChannelConfig(interaction.channelId, {
+            messageStream: interaction.options.getBoolean('stream') as boolean
+        })
 
         interaction.reply({
             content: `Message streaming for this channel is now set to: \`${interaction.options.getBoolean('stream')}\``,

@@ -1,5 +1,6 @@
 import { Client, ChatInputCommandInteraction, ApplicationCommandOptionType, MessageFlags } from 'discord.js'
-import { openConfig, SlashCommand, UserCommand } from '../utils/index.js'
+import { SlashCommand, UserCommand } from '../utils/index.js'
+import Config from '../config.js'
 
 export const Capacity: SlashCommand = {
     name: 'modify-capacity',
@@ -22,9 +23,9 @@ export const Capacity: SlashCommand = {
         if (!channel || !UserCommand.includes(channel.type)) return
 
         // save channel-level capacity
-        openConfig(`${interaction.channelId}-config.json`, interaction.commandName,
-            interaction.options.getNumber('context-capacity')
-        )
+        await Config.updateChannelConfig(interaction.channelId, {
+            modifyCapacity: interaction.options.getNumber('context-capacity') as number
+        })
 
         interaction.reply({
             content: `Max message history for this channel is now set to \`${interaction.options.get('context-capacity')?.value}\``,
