@@ -1,10 +1,11 @@
-import { Client, ChatInputCommandInteraction, ApplicationCommandOptionType, MessageFlags } from 'discord.js'
+import { Client, ChatInputCommandInteraction, ApplicationCommandOptionType, MessageFlags, PermissionFlagsBits } from 'discord.js'
 import { AdminCommand, SlashCommand } from '../utils/index.js'
 import Config from '../config.js'
 
 export const Disable: SlashCommand = {
     name: 'toggle-chat',
     description: 'toggle all chat features. Adminstrator Only.',
+    defaultMemberPermissions: PermissionFlagsBits.Administrator,
 
     // set available user options to pass to the command
     options: [
@@ -21,15 +22,6 @@ export const Disable: SlashCommand = {
         // fetch channel and message
         const channel = await client.channels.fetch(interaction.channelId)
         if (!channel || !AdminCommand.includes(channel.type)) return
-
-        // check if runner is an admin
-        if (!interaction.memberPermissions?.has('Administrator')) {
-            interaction.reply({
-                content: `${interaction.commandName} is an admin command.\n\nPlease contact an admin to use this command for you.`,
-                flags: MessageFlags.Ephemeral
-            })
-            return
-        }
 
         // set state of bot chat features
         await Config.updateServerConfig(interaction.guildId!, {

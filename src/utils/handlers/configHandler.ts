@@ -3,6 +3,20 @@ import fs from 'fs'
 import path from 'path'
 import Config from '../../config.js'
 
+const ALL_COMMAND_NAMES = [
+    'thread',
+    'private-thread',
+    'message-stream',
+    'toggle-chat',
+    'shutoff',
+    'modify-capacity',
+    'clear-user-channel-history',
+    'pull-model',
+    'switch-model',
+    'delete-model',
+    'set-system-prompt'
+]
+
 /**
  * Method to open a file in the working directory and modify/create it
  * 
@@ -108,15 +122,16 @@ export async function getServerConfig(filename: string, callback: (config: Serve
     } else {
         // If a server config file doesn't exist, provide a sensible default.
         // Use SYSTEM_PROMPT from the environment if present to seed the server config.
-          const envSystemPrompt = Config.getSystemPrompt()
-          const defaultConfig: ServerConfig = {
-              name: 'Server Confirgurations',
-              options: {
-                  toggleChat: true,
-                  ...(envSystemPrompt ? { systemPrompt: envSystemPrompt } : {})
-              }
-          }
-          callback(defaultConfig)
+        const envSystemPrompt = Config.getSystemPrompt()
+        const defaultConfig: ServerConfig = {
+            name: 'Server Confirgurations',
+            options: {
+                toggleChat: true,
+                ...(envSystemPrompt ? { systemPrompt: envSystemPrompt } : {}),
+                commandRoles: Object.fromEntries(ALL_COMMAND_NAMES.map(name => [name, [] as string[]]))
+            }
+        }
+        callback(defaultConfig)
     }
 }
 

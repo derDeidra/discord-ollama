@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, ChatInputCommandInteraction, Client, CommandInteraction, MessageFlags } from 'discord.js'
+import { ApplicationCommandOptionType, ChatInputCommandInteraction, Client, MessageFlags, PermissionFlagsBits } from 'discord.js'
 import { UserCommand, SlashCommand } from '../utils/index.js'
 import { ollama } from '../client.js'
 import { ModelResponse } from 'ollama'
@@ -6,6 +6,7 @@ import { ModelResponse } from 'ollama'
 export const DeleteModel: SlashCommand = {
     name: 'delete-model',
     description: 'deletes a model from the local list of models. Administrator Only.',
+    defaultMemberPermissions: PermissionFlagsBits.Administrator,
 
     // set available user options to pass to the command
     options: [
@@ -27,15 +28,6 @@ export const DeleteModel: SlashCommand = {
         // fetch channel and message
         const channel = await client.channels.fetch(interaction.channelId)
         if (!channel || !UserCommand.includes(channel.type)) return
-
-        // Admin Command
-        if (!interaction.memberPermissions?.has('Administrator')) {
-            interaction.reply({
-                content: `${interaction.commandName} is an admin command.\n\nPlease contact a server admin to pull the model you want.`,
-                flags: MessageFlags.Ephemeral
-            })
-            return
-        }
 
         // check if model exists
         const modelExists = await ollama.list()

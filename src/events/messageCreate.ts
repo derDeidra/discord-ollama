@@ -1,7 +1,7 @@
-import { event, Events, normalMessage, UserMessage, clean, blockResponse } from '../utils/index.js'
-import { ChannelConfig, getAttachmentData, getTextFileAttachmentData } from '../utils/index.js'
+import { event, Events, normalMessage, UserMessage, clean, ChannelConfig, getAttachmentData, getTextFileAttachmentData } from '../utils/index.js'
 import { ChannelStorage } from '../storage/index.js'
 import Config from '../config.js'
+import { requestDispatcher } from '../queues/requestDispatcher.js'
 
 /** 
  * Max Message length for free users is 2000 characters (bot or not).
@@ -11,6 +11,7 @@ import Config from '../config.js'
  */
 export default event(Events.MessageCreate, async ({ log, ollama, client }, message) => {
     const clientId = client.user!!.id
+    const DISPATCH_TIMEOUT = 15000 // milliseconds to wait in queue before failing
     let cleanedMessage = clean(message.content, clientId)
     if (cleanedMessage.length < 5) return // ignore messages that are too short after cleaning
     log(`Message \"${cleanedMessage}\" from ${message.author.tag} in channel/thread ${message.channelId}.`)
@@ -115,11 +116,11 @@ export default event(Events.MessageCreate, async ({ log, ollama, client }, messa
                 }
             ]
             // Summarize the messages
-            const summary = await blockResponse({
+            const summary = await requestDispatcher.blockResponse({
                 model: finalModel,
                 ollama: ollama,
                 msgHist: summarizer_prompt
-            })
+            }, DISPATCH_TIMEOUT)
             // Replace summarized messages with the summary
             channelHistory = [
                 channelHistory[0], // Keep the system prompt
@@ -135,7 +136,14 @@ export default event(Events.MessageCreate, async ({ log, ollama, client }, messa
         const model: string = finalModel
 
         // response string for ollama to put its response
-        var response: string = await normalMessage(message, ollama, model, channelHistory, shouldStream)
+        var response: string = await normalMessage(
+            message,
+            ollama,
+            model,
+            channelHistory,
+            shouldStream,
+            DISPATCH_TIMEOUT
+        )
 
         // If something bad happened, stop without modifying persisted history
         if (response == undefined) return

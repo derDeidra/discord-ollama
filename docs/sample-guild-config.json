@@ -1,0 +1,21 @@
+{
+  "name": "Server Configurations",
+  "options": {
+    "toggleChat": true,
+    "systemPrompt": "You are a helpful assistant.",
+    "commandRoles": {
+      "thread": [],
+      "private-thread": [],
+      "message-stream": [],
+    "toggle-chat": ["123456789012345678"],
+    "shutoff": ["123456789012345678"],
+    "modify-capacity": [],
+    "clear-user-channel-history": [],
+    "pull-model": ["123456789012345678"],
+    "switch-model": [],
+    "delete-model": ["123456789012345678"],
+    "set-system-prompt": ["123456789012345678"]
+    }
+  }
+}
+

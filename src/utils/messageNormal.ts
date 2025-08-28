@@ -1,7 +1,8 @@
 import { Message, SendableChannels } from 'discord.js'
 import { ChatResponse, Ollama } from 'ollama'
-import { ChatParams, UserMessage, streamResponse, blockResponse } from './index.js'
+import { ChatParams, UserMessage } from './index.js'
 import { AbortableAsyncIterator } from 'ollama/src/utils.js'
+import { requestDispatcher } from '../queues/requestDispatcher.js'
 
 /**
  * Method to send replies as normal text on discord like any other user
@@ -14,7 +15,8 @@ export async function normalMessage(
     ollama: Ollama,
     model: string,
     msgHist: UserMessage[],
-    stream: boolean
+    stream: boolean,
+    timeout = 10000
 ): Promise<string> {
     // bot's respnse
     let response: ChatResponse | AbortableAsyncIterator<ChatResponse>
@@ -32,7 +34,7 @@ export async function normalMessage(
             // run query based on stream preference, true = stream, false = block
             if (stream) {
                 let messageBlock: Message = sentMessage
-                response = await streamResponse(params) // THIS WILL BE SLOW due to discord limits!
+                response = await requestDispatcher.streamResponse(params, timeout) // THIS WILL BE SLOW due to discord limits!
                 for await (const portion of response) {
                     // check if over discord message limit
                     if (result.length + portion.message.content.length > 2000) {
@@ -52,7 +54,7 @@ export async function normalMessage(
                 }
             }
             else {
-                response = await blockResponse(params)
+                response = await requestDispatcher.blockResponse(params, timeout)
                 result = response.message.content
 
                 // If the model returned an empty or whitespace response, replace with a safe fallback
