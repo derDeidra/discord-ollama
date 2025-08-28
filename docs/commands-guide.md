@@ -7,6 +7,10 @@ This is a guide to all of the slash commands for the app.
 > [!NOTE]
 > Administrator commands are only usable by actual administrators on the Discord server.
 
+> [!TIP]
+> Server owners can map Discord role IDs to commands in `data/<guild-id>-config.json` under the `command-roles` section.
+> Each command lists the roles allowed to run it. See [Command Permissions](./command-permissions.md) for configuration details.
+
 ### Guild Commands (Administrator)
 1. Disable (or Toggle Chat)  
     This command will `enable` or `disable` whether or not the app will respond to users.  

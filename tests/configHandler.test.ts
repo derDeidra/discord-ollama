@@ -31,4 +31,10 @@ describe('Config Handler - openConfigMultiple', () => {
         expect(data.options['system-prompt']).toBe('new prompt')
         expect(data.options['toggle-chat']).toBe(false)
     })
+
+    it('stores command role mappings', () => {
+        openConfigMultiple('test-guild-config.json', { 'command-roles': { 'pull-model': ['1', '2'] } })
+        const data = JSON.parse(fs.readFileSync(testFile, 'utf8'))
+        expect(data.options['command-roles']['pull-model']).toEqual(['1', '2'])
+    })
 })

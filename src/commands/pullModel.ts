@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, Client, ChatInputCommandInteraction, MessageFlags } from "discord.js"
+import { ApplicationCommandOptionType, Client, ChatInputCommandInteraction, PermissionFlagsBits } from "discord.js"
 import { ollama } from "../client.js"
 import { ModelResponse } from "ollama"
 import { UserCommand, SlashCommand } from "../utils/index.js"
@@ -6,6 +6,7 @@ import { UserCommand, SlashCommand } from "../utils/index.js"
 export const PullModel: SlashCommand = {
     name: 'pull-model',
     description: 'pulls a model from the ollama model library. Administrator Only.',
+    defaultMemberPermissions: PermissionFlagsBits.Administrator,
 
     // set available user options to pass to the command
     options: [
@@ -27,15 +28,6 @@ export const PullModel: SlashCommand = {
         // fetch channel and message
         const channel = await client.channels.fetch(interaction.channelId)
         if (!channel || !UserCommand.includes(channel.type)) return
-
-        // Admin Command
-        if (!interaction.memberPermissions?.has('Administrator')) {
-            interaction.reply({
-                content: `${interaction.commandName} is an admin command.\n\nPlease contact a server admin to pull the model you want.`,
-                flags: MessageFlags.Ephemeral
-            })
-            return
-        }
 
         // check if model was already pulled, if the ollama service isn't running throw error
         const modelExists = await ollama.list()

@@ -2,6 +2,20 @@ import { Configuration, ServerConfig, ChannelConfig, isServerConfigurationKey } 
 import fs from 'fs'
 import path from 'path'
 
+const ALL_COMMAND_NAMES = [
+    'thread',
+    'private-thread',
+    'message-stream',
+    'toggle-chat',
+    'shutoff',
+    'modify-capacity',
+    'clear-user-channel-history',
+    'pull-model',
+    'switch-model',
+    'delete-model',
+    'set-system-prompt'
+]
+
 /**
  * Method to open a file in the working directory and modify/create it
  * 
@@ -112,7 +126,8 @@ export async function getServerConfig(filename: string, callback: (config: Serve
             name: 'Server Confirgurations',
             options: {
                 'toggle-chat': true,
-                ...(envSystemPrompt ? { 'system-prompt': envSystemPrompt } : {})
+                ...(envSystemPrompt ? { 'system-prompt': envSystemPrompt } : {}),
+                'command-roles': Object.fromEntries(ALL_COMMAND_NAMES.map(name => [name, [] as string[]]))
             }
         }
         callback(defaultConfig)
