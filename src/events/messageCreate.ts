@@ -132,15 +132,6 @@ export default event(Events.MessageCreate, async ({ log, ollama, client }, messa
         if (!finalModel)
             throw new Error(`Failed to initialize a Model. Please set a model by running \`/switch-model <model of choice>\` or configure a channel model.`)
 
-        // get message attachment if exists
-        const attachment = message.attachments.first()
-        let messageAttachment: string[] = []
-
-        if (attachment && attachment.name?.endsWith(".txt"))
-            cleanedMessage += await getTextFileAttachmentData(attachment)
-        else if (attachment)
-            messageAttachment = await getAttachmentData(attachment)
-
         const model: string = finalModel
 
         // response string for ollama to put its response
