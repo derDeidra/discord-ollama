@@ -41,12 +41,11 @@ export async function blockResponse(params: ChatParams): Promise<ChatResponse> {
         messages: params.msgHist,
         options: {
             temperature: 0.8,
-            top_p: 0.92,
-            top_k: 60,
-            // typical_p if supported by your client/runtime:
-            typical_p: 0.98,
-            repeat_penalty: 1.2,        // not 2.0
-            repeat_last_n: 768,         // apply penalty over a longer recent window
+            top_p: 0.95,
+            top_k: 25,
+            typical_p: 1.0,
+            repeat_penalty: 1.12,
+            repeat_last_n: 768,
             frequency_penalty: 0.35,
             presence_penalty: 0.15,
         },

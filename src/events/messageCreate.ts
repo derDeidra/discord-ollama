@@ -15,6 +15,7 @@ import {
 export default event(Events.MessageCreate, async ({ log, ollama, client, defaultModel }, message) => {
     const clientId = client.user!!.id
     let cleanedMessage = clean(message.content, clientId)
+    if (cleanedMessage.length < 5) return // ignore messages that are too short after cleaning
     log(`Message \"${cleanedMessage}\" from ${message.author.tag} in channel/thread ${message.channelId}.`)
 
     // Do not respond if bot talks in the chat
