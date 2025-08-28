@@ -2,6 +2,7 @@ import { Client, ChatInputCommandInteraction, ApplicationCommandOptionType, Mess
 import { AdminCommand, SlashCommand } from '../utils/index.js'
 import Config from '../config.js'
 
+
 export const SetSystemPrompt: SlashCommand = {
     name: 'set-system-prompt',
     description: 'Set a global system prompt applied to new channels/threads. Administrator only.',

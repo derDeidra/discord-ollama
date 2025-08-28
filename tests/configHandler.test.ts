@@ -37,5 +37,11 @@ describe('Config Handler - openConfigMultiple', () => {
         const data = JSON.parse(fs.readFileSync(testFile, 'utf8'))
         expect(data.options.commandRoles['pull-model']).toEqual(['1', '2'])
     })
+
+    it('stores command role mappings', () => {
+        openConfigMultiple('test-guild-config.json', { 'command-roles': { 'pull-model': ['1', '2'] } })
+        const data = JSON.parse(fs.readFileSync(testFile, 'utf8'))
+        expect(data.options['command-roles']['pull-model']).toEqual(['1', '2'])
+    })
 })
 

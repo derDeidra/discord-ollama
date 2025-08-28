@@ -2,6 +2,7 @@ import { Client, ChatInputCommandInteraction, ApplicationCommandOptionType, Mess
 import { AdminCommand, SlashCommand } from '../utils/index.js'
 import Config from '../config.js'
 
+
 export const Disable: SlashCommand = {
     name: 'toggle-chat',
     description: 'toggle all chat features. Adminstrator Only.',

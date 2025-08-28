@@ -12,6 +12,7 @@ import { requestDispatcher } from '../queues/requestDispatcher.js'
 export default event(Events.MessageCreate, async ({ log, ollama, client }, message) => {
     const clientId = client.user!!.id
     const DISPATCH_TIMEOUT = 15000 // milliseconds to wait in queue before failing
+    const DISPATCH_TIMEOUT = 15000 // milliseconds to wait in queue before failing
     let cleanedMessage = clean(message.content, clientId)
     if (cleanedMessage.length < 5) return // ignore messages that are too short after cleaning
     log(`Message \"${cleanedMessage}\" from ${message.author.tag} in channel/thread ${message.channelId}.`)
@@ -117,9 +118,11 @@ export default event(Events.MessageCreate, async ({ log, ollama, client }, messa
             ]
             // Summarize the messages
             const summary = await requestDispatcher.blockResponse({
+            const summary = await requestDispatcher.blockResponse({
                 model: finalModel,
                 ollama: ollama,
                 msgHist: summarizer_prompt
+            }, DISPATCH_TIMEOUT)
             }, DISPATCH_TIMEOUT)
             // Replace summarized messages with the summary
             channelHistory = [
@@ -136,6 +139,14 @@ export default event(Events.MessageCreate, async ({ log, ollama, client }, messa
         const model: string = finalModel
 
         // response string for ollama to put its response
+        var response: string = await normalMessage(
+            message,
+            ollama,
+            model,
+            channelHistory,
+            shouldStream,
+            DISPATCH_TIMEOUT
+        )
         var response: string = await normalMessage(
             message,
             ollama,
