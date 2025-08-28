@@ -12,6 +12,11 @@ export interface ChannelConfiguration {
 export interface ServerConfiguration {
     'toggle-chat'?: boolean,
     'system-prompt'?: string,
+    /**
+     * Maps command names to arrays of Discord role IDs allowed to execute them.
+     * Each command should list the roles that are permitted to run it.
+     */
+    'command-roles'?: Record<string, string[]>,
 }
 
 /**
@@ -66,5 +71,5 @@ export const UserCommand = [
  * @returns true if command is from Server Config, false otherwise
  */
 export function isServerConfigurationKey(key: string): key is keyof ServerConfiguration {
-    return ['toggle-chat', 'system-prompt'].includes(key);
+    return ['toggle-chat', 'system-prompt', 'command-roles'].includes(key);
 }
