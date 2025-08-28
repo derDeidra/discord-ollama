@@ -1,6 +1,7 @@
 import { Configuration, ServerConfig, ChannelConfig, isServerConfigurationKey } from '../index.js'
 import fs from 'fs'
 import path from 'path'
+import Config from '../../config.js'
 
 /**
  * Method to open a file in the working directory and modify/create it
@@ -68,7 +69,7 @@ export function openConfigMultiple(filename: string, options: { [key: string]: a
     } else {
         // Build a default Configuration object depending on whether any key is a server key
         // Use the first key to decide server vs channel config naming
-        const sampleKey = Object.keys(options)[0] ?? 'switch-model'
+        const sampleKey = Object.keys(options)[0] ?? 'switchModel'
         let object: Configuration
         if (isServerConfigurationKey(sampleKey))
             object = JSON.parse('{ "name": "Server Confirgurations" }')
@@ -107,15 +108,15 @@ export async function getServerConfig(filename: string, callback: (config: Serve
     } else {
         // If a server config file doesn't exist, provide a sensible default.
         // Use SYSTEM_PROMPT from the environment if present to seed the server config.
-        const envSystemPrompt = process.env['SYSTEM_PROMPT']
-        const defaultConfig: ServerConfig = {
-            name: 'Server Confirgurations',
-            options: {
-                'toggle-chat': true,
-                ...(envSystemPrompt ? { 'system-prompt': envSystemPrompt } : {})
-            }
-        }
-        callback(defaultConfig)
+          const envSystemPrompt = Config.getSystemPrompt()
+          const defaultConfig: ServerConfig = {
+              name: 'Server Confirgurations',
+              options: {
+                  toggleChat: true,
+                  ...(envSystemPrompt ? { systemPrompt: envSystemPrompt } : {})
+              }
+          }
+          callback(defaultConfig)
     }
 }
 

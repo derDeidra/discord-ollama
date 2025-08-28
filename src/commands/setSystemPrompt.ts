@@ -1,5 +1,6 @@
 import { Client, ChatInputCommandInteraction, ApplicationCommandOptionType, MessageFlags } from 'discord.js'
-import { AdminCommand, openConfig, SlashCommand } from '../utils/index.js'
+import { AdminCommand, SlashCommand } from '../utils/index.js'
+import Config from '../config.js'
 
 export const SetSystemPrompt: SlashCommand = {
     name: 'set-system-prompt',
@@ -30,7 +31,7 @@ export const SetSystemPrompt: SlashCommand = {
 
         const prompt = interaction.options.getString('prompt') as string
 
-        openConfig(`${interaction.guildId}-config.json`, 'system-prompt', prompt)
+        await Config.updateServerConfig(interaction.guildId!, { systemPrompt: prompt })
 
         interaction.reply({
             content: `Server system prompt was set. New channels will inherit this prompt.`,

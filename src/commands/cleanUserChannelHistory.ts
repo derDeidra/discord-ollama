@@ -1,5 +1,6 @@
 import { Channel, Client, CommandInteraction, MessageFlags, TextChannel } from 'discord.js'
-import { clearChannelInfo, SlashCommand, UserCommand } from '../utils/index.js'
+import { SlashCommand, UserCommand } from '../utils/index.js'
+import { ChannelStorage } from '../storage/index.js'
 
 export const ClearUserChannelHistory: SlashCommand = {
     name: 'clear-user-channel-history',
@@ -14,10 +15,9 @@ export const ClearUserChannelHistory: SlashCommand = {
         if (!channel || !UserCommand.includes(channel.type)) return
 
         // clear channel info for user
-            const successfulWipe = await clearChannelInfo(
-                `${interaction.channelId}-channel-context.json`,
-                interaction.channel as TextChannel,
-                interaction.user.id
+        const successfulWipe = await ChannelStorage.clearUserMessages(
+            interaction.channelId,
+            interaction.user.id
         )
 
         // check result of clearing history

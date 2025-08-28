@@ -1,17 +1,24 @@
 import { ChannelType } from 'discord.js'
 import { UserMessage } from './index.js'
 
+/**
+ * Configuration options scoped to a specific channel/thread.
+ * Properties are camelCased for strong typing and self-documenting access.
+ */
 export interface ChannelConfiguration {
-    'message-stream'?: boolean,
-    'modify-capacity': number,
-    'switch-model': string,
-    'system-prompt'?: string,
-    'max-messages'?: number
+    messageStream?: boolean,
+    modifyCapacity?: number,
+    switchModel: string,
+    systemPrompt?: string,
+    maxMessages?: number
 }
 
+/**
+ * Configuration options scoped to an entire server/guild.
+ */
 export interface ServerConfiguration {
-    'toggle-chat'?: boolean,
-    'system-prompt'?: string,
+    toggleChat?: boolean,
+    systemPrompt?: string,
 }
 
 /**
@@ -30,7 +37,8 @@ export interface Configuration {
  */
 export interface ChannelConfig {
     readonly name: string
-    options: ChannelConfiguration
+    // Resolved options contain both server and channel-scoped settings
+    options: ChannelConfiguration & ServerConfiguration
 }
 
 export interface ServerConfig {
@@ -66,5 +74,5 @@ export const UserCommand = [
  * @returns true if command is from Server Config, false otherwise
  */
 export function isServerConfigurationKey(key: string): key is keyof ServerConfiguration {
-    return ['toggle-chat', 'system-prompt'].includes(key);
+    return ['toggleChat', 'systemPrompt'].includes(key);
 }

@@ -1,5 +1,6 @@
 import { Client, ChatInputCommandInteraction, ApplicationCommandOptionType, MessageFlags } from 'discord.js'
-import { AdminCommand, openConfig, SlashCommand } from '../utils/index.js'
+import { AdminCommand, SlashCommand } from '../utils/index.js'
+import Config from '../config.js'
 
 export const Disable: SlashCommand = {
     name: 'toggle-chat',
@@ -31,9 +32,9 @@ export const Disable: SlashCommand = {
         }
 
         // set state of bot chat features
-        openConfig(`${interaction.guildId}-config.json`, interaction.commandName,
-            interaction.options.getBoolean('enabled')
-        )
+        await Config.updateServerConfig(interaction.guildId!, {
+            toggleChat: interaction.options.getBoolean('enabled') as boolean
+        })
 
         interaction.reply({
             content: `${client.user?.username} is now **${interaction.options.getBoolean('enabled') ? "enabled" : "disabled"}**.`,

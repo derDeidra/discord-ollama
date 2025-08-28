@@ -1,5 +1,6 @@
 import { ChannelType, Client, CommandInteraction, MessageFlags, TextChannel, ThreadChannel } from 'discord.js'
-import { AdminCommand, openChannelInfo, SlashCommand } from '../utils/index.js'
+import { AdminCommand, SlashCommand } from '../utils/index.js'
+import { ensureChannelInfo } from '../storage/index.js'
 
 export const PrivateThreadCreate: SlashCommand = {
     name: 'private-thread',
@@ -22,7 +23,7 @@ export const PrivateThreadCreate: SlashCommand = {
 
         // handle storing this chat channel
         // store: thread.id, thread.name
-        openChannelInfo(thread.id, thread as ThreadChannel)
+        await ensureChannelInfo(thread.id, thread as ThreadChannel)
 
         // user only reply
         return interaction.reply({

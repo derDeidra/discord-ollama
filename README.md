@@ -72,8 +72,8 @@ These are guides to the features and capabilities of this app.
 
 This release removes per-user preferences. Configuration is now channel-scoped only. Key points:
 
-- Server config files: `data/<guildId>-config.json` (can contain `system-prompt`).
-- Channel config files: `data/<channelId>-config.json` (contain `switch-model`, `modify-capacity`, `message-stream`, `system-prompt`).
+- Server config files: `data/<guildId>-config.json` (can contain `systemPrompt`).
+- Channel config files: `data/<channelId>-config.json` (contain `switchModel`, `modifyCapacity`, `messageStream`, `systemPrompt`).
 - Channel chat history: `data/<channelId>-channel.json`.
 
 This moves non-channel and non-server config JSON files into `data/archived_user_configs/`.

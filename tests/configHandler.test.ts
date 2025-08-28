@@ -16,19 +16,19 @@ describe('Config Handler - openConfigMultiple', () => {
     })
 
     it('creates a new config file with provided options', () => {
-        openConfigMultiple('test-guild-config.json', { 'toggle-chat': true, 'system-prompt': 'hello' })
+        openConfigMultiple('test-guild-config.json', { toggleChat: true, systemPrompt: 'hello' })
         expect(fs.existsSync(testFile)).toBe(true)
         const data = JSON.parse(fs.readFileSync(testFile, 'utf8'))
-        expect(data.options['toggle-chat']).toBe(true)
-        expect(data.options['system-prompt']).toBe('hello')
+        expect(data.options.toggleChat).toBe(true)
+        expect(data.options.systemPrompt).toBe('hello')
     })
 
     it('updates an existing config file with multiple keys', () => {
         // create initial file
-        fs.writeFileSync(testFile, JSON.stringify({ name: 'Server Confirgurations', options: { 'toggle-chat': true } }))
-        openConfigMultiple('test-guild-config.json', { 'system-prompt': 'new prompt', 'toggle-chat': false })
+        fs.writeFileSync(testFile, JSON.stringify({ name: 'Server Confirgurations', options: { toggleChat: true } }))
+        openConfigMultiple('test-guild-config.json', { systemPrompt: 'new prompt', toggleChat: false })
         const data = JSON.parse(fs.readFileSync(testFile, 'utf8'))
-        expect(data.options['system-prompt']).toBe('new prompt')
-        expect(data.options['toggle-chat']).toBe(false)
+        expect(data.options.systemPrompt).toBe('new prompt')
+        expect(data.options.toggleChat).toBe(false)
     })
 })
