@@ -40,14 +40,10 @@ export async function blockResponse(params: ChatParams): Promise<ChatResponse> {
         model: params.model,
         messages: params.msgHist,
         options: {
-            temperature: 0.8,
+            temperature: 1.15,
             top_p: 0.95,
-            top_k: 25,
-            typical_p: 1.0,
-            repeat_penalty: 1.12,
-            repeat_last_n: 768,
-            frequency_penalty: 0.35,
-            presence_penalty: 0.15,
+            top_k: 64,
+            repeat_penalty: 1.0
         },
         stream: false
     })

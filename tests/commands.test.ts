@@ -27,7 +27,7 @@ describe('Commands Existence', () => {
     // test specific commands in the object
     it('references specific commands', () => {
         const commandsString = commands.map(e => e.name).join(', ')
-    const expectedCommands = ['thread', 'private-thread', 'message-stream', 'toggle-chat', 'shutoff', 'modify-capacity', 'clear-channel-history', 'pull-model', 'switch-model', 'delete-model', 'set-system-prompt']
+    const expectedCommands = ['thread', 'private-thread', 'message-stream', 'toggle-chat', 'shutoff', 'modify-capacity', 'clear-channel-history', 'pull-model', 'switch-model', 'delete-model', 'set-system-prompt', 'warm-model']
         expect(commandsString).toBe(expectedCommands.join(', '))
     })
 })
@@ -64,7 +64,7 @@ describe('User Command Tests', () => {
 })
 
 /**
- * Admin Commands Test suite for running administrative 
+ * Admin Commands Test suite for running administrative
  * commands with the application.
  */
 describe('Admin Command Tests', () => {
@@ -74,5 +74,17 @@ describe('Admin Command Tests', () => {
 
     it('run toggle-chat command', () => {
 
+    })
+
+    it('warm-model is admin only', () => {
+        const cmd = commands.find(c => c.name === 'warm-model')
+        expect(cmd?.defaultMemberPermissions).toBeTruthy()
+    })
+
+    it('warm-model has optional duration option', () => {
+        const cmd = commands.find(c => c.name === 'warm-model')
+        const durationOption = cmd?.options?.find((o: any) => o.name === 'duration')
+        expect(durationOption).toBeDefined()
+        expect((durationOption as any)?.required).toBe(false)
     })
 })

@@ -10,6 +10,7 @@ import { PullModel } from './pullModel.js'
 import { SwitchModel } from './switchModel.js'
 import { DeleteModel } from './deleteModel.js'
 import { SetSystemPrompt } from './setSystemPrompt.js'
+import { WarmModel } from './warmModel.js'
 
 export default [
     ThreadCreate,
@@ -21,6 +22,7 @@ export default [
     ClearChannelHistory,
     PullModel,
     SwitchModel,
-    DeleteModel
-    ,SetSystemPrompt
+    DeleteModel,
+    SetSystemPrompt,
+    WarmModel
 ] as SlashCommand[]

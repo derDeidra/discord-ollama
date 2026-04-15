@@ -29,7 +29,20 @@ This is a guide to all of the slash commands for the app.
     /shutoff are-you-sure true
     ```
 
-3. Set System Prompt
+3. Warm Model
+    This command loads the configured model into VRAM so the first response isn't slow. The model will unload automatically after the specified duration (defaults to 30 minutes).
+
+    ```
+    /warm-model
+    ```
+
+    Optionally specify how long to keep it loaded:
+
+    ```
+    /warm-model duration 1h
+    ```
+
+4. Set System Prompt
     This command sets a server-wide system prompt which will be applied to newly-created channels and threads. Only administrators can run this command.
 
     ```
@@ -41,7 +54,7 @@ This is a guide to all of the slash commands for the app.
     This command clears the stored chat history for the current channel/thread (affects everyone). Running the command in any channel will clear that channel's message history.
 
     ```
-    /clear-user-channel-history
+    /clear-channel-history
     ```
 
 2. Pull Model  
