@@ -84,11 +84,8 @@ export function registerEvents(
             const log = console.log.bind(console, `[Event: ${key}]`)
 
             // Handle Errors, call callback, log errors as needed
-            try {
-                callback({ client, log, ollama }, ...args)
-            } catch (error) {
-                log('[Uncaught Error]', error)
-            }
+            Promise.resolve(callback({ client, log, ollama }, ...args))
+                .catch(error => log('[Uncaught Error]', error))
         })
     }
 }

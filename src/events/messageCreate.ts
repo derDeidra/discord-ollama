@@ -150,14 +150,6 @@ export default event(Events.MessageCreate, async ({ log, ollama, client }, messa
             shouldStream,
             DISPATCH_TIMEOUT
         )
-        var response: string = await normalMessage(
-            message,
-            ollama,
-            model,
-            channelHistory,
-            shouldStream,
-            DISPATCH_TIMEOUT
-        )
 
         // If something bad happened, stop without modifying persisted history
         if (response == undefined) return

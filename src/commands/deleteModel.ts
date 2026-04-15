@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, ChatInputCommandInteraction, Client, MessageFlags, PermissionFlagsBits } from 'discord.js'
+import { ApplicationCommandOptionType, ChatInputCommandInteraction, Client, PermissionFlagsBits } from 'discord.js'
 import { UserCommand, SlashCommand } from '../utils/index.js'
 import { ollama } from '../client.js'
 import { ModelResponse } from 'ollama'
@@ -57,9 +57,8 @@ export const DeleteModel: SlashCommand = {
                 throw new Error()
         } catch (error) {
             // could not delete the model
-            interaction.reply({
+            interaction.editReply({
                 content: `Could not delete the **${modelInput}** model. It probably doesn't exist or you spelled it incorrectly.\n\nPlease try again if this is a mistake.`,
-                flags: MessageFlags.Ephemeral
             })
         }
     }

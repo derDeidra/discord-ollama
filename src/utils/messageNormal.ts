@@ -34,24 +34,27 @@ export async function normalMessage(
             // run query based on stream preference, true = stream, false = block
             if (stream) {
                 let messageBlock: Message = sentMessage
+                let fullResult: string = ''
                 response = await requestDispatcher.streamResponse(params, timeout) // THIS WILL BE SLOW due to discord limits!
                 for await (const portion of response) {
+                    fullResult += portion.message.content
+
                     // check if over discord message limit
                     if (result.length + portion.message.content.length > 2000) {
                         result = portion.message.content
 
                         // new message block, wait for it to send and assign new block to respond.
-                        await channel.send("Creating new stream block...")
-                            .then(sentMessage => { messageBlock = sentMessage })
+                        messageBlock = await channel.send("Creating new stream block...")
                     } else {
                         result += portion.message.content
 
                         // ensure block is not empty
                         if (result.length > 5)
-                            messageBlock.edit(result)
+                            await messageBlock.edit(result)
                     }
                     console.log(result)
                 }
+                result = fullResult
             }
             else {
                 response = await requestDispatcher.blockResponse(params, timeout)
