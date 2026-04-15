@@ -31,36 +31,42 @@ export default event(Events.MessageCreate, async ({ log, ollama, client }, messa
     else if (attachment)
         messageAttachment = await getAttachmentData(attachment)
 
-    // Trim channel history to fit within the configured token window.
-    // We use a simple token estimator (split on whitespace) as an approximation.
+    // Rough token estimator (split on whitespace/punctuation) used to enforce context budget
     function estimateTokens(text: string): number {
         if (!text) return 0
-        // split on whitespace and punctuation-ish characters to approximate tokens
         return text.split(/\s+|(?=[.,!?;:\-()\[\]{}])/).filter(Boolean).length
     }
 
-    // Calculate current token usage of the channel history
-    let totalTokens = channelHistory.reduce((sum, m) => sum + estimateTokens(m.content), 0)
+    // Strip images from all messages except the last before persisting — base64 blobs
+    // are only useful for the current inference and cause history files to grow unboundedly
+    function stripOldImages(history: UserMessage[]): UserMessage[] {
+        return history.map((msg, i) =>
+            i < history.length - 1 ? { ...msg, images: [] } : msg
+        )
+    }
+
     const maxTokens = Config.getMaxContextTokens()
 
-    // If history exceeds max tokens, remove oldest messages until within budget
+    // push user message
+    channelHistory.push({
+        role: 'user',
+        content: cleanedMessage,
+        images: messageAttachment || [],
+        userId: message.author.id,
+        username: message.author.displayName ?? message.author.username
+    })
+
+    // Trim AFTER push so the written history stays within the token budget
+    let totalTokens = channelHistory.reduce((sum, m) => sum + estimateTokens(m.content), 0)
     while (totalTokens > maxTokens && channelHistory.length > 0) {
         const removed = channelHistory.shift()!
         totalTokens -= estimateTokens(removed.content)
     }
 
-    // push user response to channel history
-    channelHistory.push({
-        role: 'user',
-        content: cleanedMessage,
-        images: messageAttachment || [],
-        userId: message.author.id
-    })
-
     // Only respond if message mentions the bot
     if (!message.mentions.has(clientId)){
         // Store in Channel Context even if not responding
-        await ChannelStorage.writeHistory(message.channelId, channelHistory)
+        await ChannelStorage.writeHistory(message.channelId, stripOldImages(channelHistory))
         return
     }
 
@@ -165,10 +171,10 @@ export default event(Events.MessageCreate, async ({ log, ollama, client }, messa
         })
 
         // write final output to channel history
-        await ChannelStorage.writeHistory(message.channelId, channelHistory)
+        await ChannelStorage.writeHistory(message.channelId, stripOldImages(channelHistory))
     } catch (error: any) {
         channelHistory.pop() // remove message because of failure
-        await ChannelStorage.writeHistory(message.channelId, channelHistory)
+        await ChannelStorage.writeHistory(message.channelId, stripOldImages(channelHistory))
         message.reply(`**Error Occurred:**\n\n**Reason:** *${error.message}*`)
     }
 })

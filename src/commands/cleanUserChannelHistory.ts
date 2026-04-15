@@ -1,35 +1,21 @@
-import { Channel, Client, CommandInteraction, MessageFlags, TextChannel } from 'discord.js'
+import { Channel, Client, CommandInteraction, MessageFlags } from 'discord.js'
 import { SlashCommand, UserCommand } from '../utils/index.js'
 import { ChannelStorage } from '../storage/index.js'
 
-export const ClearUserChannelHistory: SlashCommand = {
-    name: 'clear-user-channel-history',
-    description: 'clears history for user in the current channel',
+export const ClearChannelHistory: SlashCommand = {
+    name: 'clear-channel-history',
+    description: 'clears the full chat history for this channel',
 
-    // Clear channel history for intended user
     run: async (client: Client, interaction: CommandInteraction) => {
-        // fetch current channel
         const channel: Channel | null = await client.channels.fetch(interaction.channelId)
 
-        // if not an existing channel or a GuildText, fail command
         if (!channel || !UserCommand.includes(channel.type)) return
 
-        // clear channel info for user
-        const successfulWipe = await ChannelStorage.clearUserMessages(
-            interaction.channelId,
-            interaction.user.id
-        )
+        await ChannelStorage.writeHistory(interaction.channelId, [])
 
-        // check result of clearing history
-        if (successfulWipe)
-            interaction.reply({
-                content: `History cleared in **this channel** cleared for **${interaction.user.username}**.`,
-                flags: MessageFlags.Ephemeral
-            })
-        else
-            interaction.reply({
-                content: `History was not be found for **${interaction.user.username}** in **this channel**.\n\nPlease chat with **${client.user?.username}** to start a chat history.`,
-                flags: MessageFlags.Ephemeral
-            })
+        interaction.reply({
+            content: `Chat history cleared for this channel.`,
+            flags: MessageFlags.Ephemeral
+        })
     }
 }

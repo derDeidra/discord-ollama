@@ -33,7 +33,7 @@ export async function blockResponse(params: ChatParams): Promise<ChatResponse> {
         }
         return {
             ...msg,
-            content: `[user ${msg.userId}]: ${msg.content}`
+            content: `[user ${msg.username ?? msg.userId}]: ${msg.content}`
         }
     })
     return await params.ollama.chat({

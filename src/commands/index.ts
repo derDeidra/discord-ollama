@@ -5,7 +5,7 @@ import { Disable } from './disable.js'
 import { Shutoff } from './shutoff.js'
 import { Capacity } from './capacity.js'
 import { PrivateThreadCreate } from './threadPrivateCreate.js'
-import { ClearUserChannelHistory } from './cleanUserChannelHistory.js'
+import { ClearChannelHistory } from './cleanUserChannelHistory.js'
 import { PullModel } from './pullModel.js'
 import { SwitchModel } from './switchModel.js'
 import { DeleteModel } from './deleteModel.js'
@@ -18,7 +18,7 @@ export default [
     Disable,
     Shutoff,
     Capacity,
-    ClearUserChannelHistory,
+    ClearChannelHistory,
     PullModel,
     SwitchModel,
     DeleteModel
